@@ -1,0 +1,256 @@
+#include "shape.h"
+#include "window.h"
+#include "style.h"
+#include "types.h"
+
+#include <iostream>
+
+namespace cg {
+    void Quad(cg::Vec2f pos, int size, unsigned int flags){
+        cg::Vec2f origin = flags & CENTERED ? (pos - cg::Vec2f(size / 2.f, size / 2.f)) : pos;
+        if (flags & CENTERED) flags &= ~CENTERED;
+        
+        cg::Rectangle(origin, cg::Vec2f(size, size), flags | NO_BORDER);
+    }
+
+    void Square(cg::Vec2f pos, int size, unsigned int flags){
+        cg::Rectangle(pos, cg::Vec2f(size, size), flags);
+    }
+
+    void UnfilledSquare(cg::Vec2f pos, int size, int thickness, unsigned int flags){
+        cg::UnfilledRectangle(pos, cg::Vec2f(size, size), thickness, flags);
+    }
+
+    void RoundedSquare(cg::Vec2f pos, int size, int roundedSize, unsigned int flags){
+        cg::RoundedRectangle(pos, cg::Vec2f(size, size), roundedSize, flags);
+    }
+
+    void UnfilledRoundedSquare(cg::Vec2f pos, int size, int thickness, int roundedSize, unsigned int flags){
+        cg::UnfilledRoundedRectangle(pos, cg::Vec2f(size, size), thickness, roundedSize, flags);
+    }
+
+    void Rectangle(cg::Vec2f pos, cg::Vec2f size, unsigned int flags){
+        const cg::Style style = cg::GetCurrentStyle();
+
+        const cg::Color color = flags & USE_SECONDARY_COLOR ? style.secondaryColor : style.primaryColor;
+
+        if (flags & CENTERED) pos = pos - cg::Vec2f(size.x / 2.f, size.y / 2.f);
+        flags &= ~CENTERED;
+
+        cg::Vertex bottomLeft(pos, color);
+        cg::Vertex topLeft(pos + cg::Vec2f(0, size.y), color);
+        cg::Vertex topRight(pos + size, color);
+        cg::Vertex bottomRight(pos + cg::Vec2f(size.x, 0), color);
+
+        cg::Vertex firstTriangle[3] = {
+            bottomLeft, topLeft, topRight
+        };
+        cg::Triangle(firstTriangle);
+
+        cg::Vertex secondTriangle[3] = {
+            bottomLeft, bottomRight, topRight
+        };
+        cg::Triangle(secondTriangle);
+
+        if (style.border && !(flags & NO_BORDER)){
+            cg::UnfilledRectangle(pos, size, style.borderThickness, flags | NO_BORDER | USE_SECONDARY_COLOR);
+        }
+    }
+
+    void RoundedRectangle(cg::Vec2f pos, cg::Vec2f size, int roundedSize, unsigned int flags){
+        const cg::Style style = cg::GetCurrentStyle();
+
+        const cg::Color color = flags & USE_SECONDARY_COLOR ? style.secondaryColor : style.primaryColor;
+
+        cg::Vec2f origin(pos);
+        if (flags & CENTERED) origin = pos - cg::Vec2f(size.x / 2.f, size.y / 2.f);
+        flags &= ~CENTERED;
+
+        cg::Vertex bottomLeft(origin, color);
+        cg::Vertex topLeft(origin + cg::Vec2f(0, size.y), color);
+        cg::Vertex topRight(origin + size, color);
+        cg::Vertex bottomRight(origin + cg::Vec2f(size.x, 0), color);
+
+        // Rounded edges
+        bottomLeft = cg::Vertex(bottomLeft.pos + cg::Vec2f(roundedSize, 0.f), bottomLeft.color);
+        topLeft = cg::Vertex(topLeft.pos + cg::Vec2f(roundedSize, 0.f), topLeft.color);
+        topRight = cg::Vertex(topRight.pos - cg::Vec2f(roundedSize, 0.f), topRight.color);
+        bottomRight = cg::Vertex(bottomRight.pos - cg::Vec2f(roundedSize, 0.f), bottomRight.color);
+
+        cg::Rectangle(origin + cg::Vec2f(0.f, roundedSize), cg::Vec2f(roundedSize, size.y - roundedSize * 2.f), flags | NO_BORDER);
+        cg::Rectangle(origin + cg::Vec2f(size.x - roundedSize, 0.f) + cg::Vec2f(0.f, roundedSize), cg::Vec2f(roundedSize, size.y - roundedSize * 2.f), flags | NO_BORDER);
+
+        cg::SemiCircle(origin + cg::Vec2f(roundedSize, roundedSize), roundedSize, BOTTOM_LEFT, flags);
+        cg::SemiCircle(origin + cg::Vec2f(roundedSize, size.y - roundedSize), roundedSize, TOP_LEFT, flags);
+        cg::SemiCircle(origin + cg::Vec2f(size.x - roundedSize, roundedSize), roundedSize, BOTTOM_RIGHT, flags);
+        cg::SemiCircle(origin + cg::Vec2f(size.x - roundedSize, size.y - roundedSize), roundedSize, TOP_RIGHT, flags);
+
+        cg::Vertex firstTriangle[3] = {
+            bottomLeft, topLeft, topRight
+        };
+        cg::Triangle(firstTriangle);
+
+        cg::Vertex secondTriangle[3] = {
+            bottomLeft, bottomRight, topRight
+        };
+        cg::Triangle(secondTriangle);
+
+        if (style.border && !(flags & NO_BORDER)){
+            cg::UnfilledRoundedRectangle(origin, size, style.borderThickness, roundedSize, flags | USE_SECONDARY_COLOR);
+        }
+    }
+    
+    void UnfilledRectangle(cg::Vec2f pos, cg::Vec2f size, int thickness, unsigned int flags){
+        if (flags & CENTERED) pos = pos - cg::Vec2f(size.x / 2.f, size.y / 2.f);
+        flags &= ~CENTERED;
+
+        cg::Vec2f bottomLeft(pos);
+        cg::Vec2f topLeft(pos + cg::Vec2f(thickness, size.y));
+        cg::Vec2f topRight(pos + size - cg::Vec2f(0.f, thickness));
+        cg::Vec2f bottomRight(pos + cg::Vec2f(size.x - thickness, thickness));
+
+        cg::Rectangle(bottomLeft, bottomRight - bottomLeft, flags | NO_BORDER);
+        cg::Rectangle(topLeft, topRight - topLeft, flags | NO_BORDER);
+
+        bottomRight = bottomRight - cg::Vec2f(0.f, thickness);
+
+        cg::Rectangle(bottomLeft, topLeft - bottomLeft, flags | NO_BORDER);
+        cg::Rectangle(bottomRight, topRight - bottomRight, flags | NO_BORDER);
+    }
+
+    void UnfilledRoundedRectangle(cg::Vec2f pos, cg::Vec2f size, int thickness, int roundedSize, unsigned int flags){
+        const cg::Style style = cg::GetCurrentStyle();
+        const cg::Color color = flags & USE_SECONDARY_COLOR ? style.secondaryColor : style.primaryColor;
+
+        cg::Vec2f origin(pos);
+        if (flags & CENTERED) origin = pos - cg::Vec2f(size.x / 2.f, size.y / 2.f);
+        flags &= ~CENTERED;
+
+        cg::Vec2f bottomLeft(origin + cg::Vec2f(roundedSize, 0.f));
+        cg::Vec2f topLeft(origin + cg::Vec2f(roundedSize, size.y));
+        cg::Vec2f topRight(origin + cg::Vec2f(size.x - roundedSize, size.y - thickness));
+        cg::Vec2f bottomRight(origin + cg::Vec2f(size.x - roundedSize, thickness));
+
+        cg::Rectangle(bottomLeft, bottomRight - bottomLeft, flags | NO_BORDER);
+        cg::Rectangle(topLeft, topRight - topLeft, flags | NO_BORDER);
+
+        bottomLeft = cg::Vec2f(origin + cg::Vec2f(0.f, roundedSize));
+        topLeft = cg::Vec2f(origin + cg::Vec2f(thickness, size.y - roundedSize));
+        bottomRight = cg::Vec2f(origin + cg::Vec2f(size.x, roundedSize));
+        topRight = cg::Vec2f(origin + cg::Vec2f(size.x - thickness, size.y - roundedSize));
+
+        cg::Rectangle(bottomLeft, topLeft - bottomLeft, flags | NO_BORDER);
+        cg::Rectangle(bottomRight, topRight - bottomRight, flags | NO_BORDER);
+
+        cg::UnfilledSemiCircle(origin + cg::Vec2f(roundedSize, roundedSize), roundedSize, thickness, BOTTOM_LEFT, flags);
+        cg::UnfilledSemiCircle(origin + cg::Vec2f(roundedSize, size.y - roundedSize), roundedSize, thickness, TOP_LEFT, flags);
+        cg::UnfilledSemiCircle(origin + cg::Vec2f(size.x - roundedSize, roundedSize), roundedSize, thickness, BOTTOM_RIGHT, flags);
+        cg::UnfilledSemiCircle(origin + cg::Vec2f(size.x - roundedSize, size.y - roundedSize), roundedSize, thickness, TOP_RIGHT, flags);
+    }
+
+    void Circle(cg::Vec2f pos, int radius, unsigned int flags){
+        cg::Vec2f center = flags & CENTERED ? pos : (pos + cg::Vec2f(radius / 2.f, radius / 2.f));
+
+        cg::SemiCircle(center, radius, TOP_RIGHT, flags);
+        cg::SemiCircle(center, radius, BOTTOM_RIGHT, flags);
+        cg::SemiCircle(center, radius, BOTTOM_LEFT, flags);
+        cg::SemiCircle(center, radius, TOP_LEFT, flags);
+    }
+
+    void UnfilledCircle(cg::Vec2f pos, int radius, int thickness, unsigned int flags){
+        cg::Vec2f center = flags & CENTERED ? pos : (pos + cg::Vec2f(radius / 2.f, radius / 2.f));
+
+        cg::UnfilledSemiCircle(center, radius, thickness, TOP_RIGHT, flags);
+        cg::UnfilledSemiCircle(center, radius, thickness, BOTTOM_RIGHT, flags);
+        cg::UnfilledSemiCircle(center, radius, thickness, BOTTOM_LEFT, flags);
+        cg::UnfilledSemiCircle(center, radius, thickness, TOP_LEFT, flags);
+    }
+
+    void SemiCircle(cg::Vec2f center, int radius, int direction, unsigned int flags){
+        const cg::Style style = cg::GetCurrentStyle();
+        const cg::Color color = flags & USE_SECONDARY_COLOR ? style.secondaryColor : style.primaryColor;
+
+        float step = PI / (float)style.quality / 2.f;
+        float offset = step * (float)style.quality * (float)direction;
+
+        cg::Vertex centerVertex(center, color);
+        for (int i = 0; i < style.quality; i++){
+            cg::Vertex pos1(center + cg::Vec2f(sin(step * i + offset) * radius, cos(step * i + offset) * radius), color);
+            cg::Vertex pos2(center + cg::Vec2f(sin(step * (i+1) + offset) * radius, cos(step * (i+1) + offset) * radius), color);
+
+            cg::Vertex triangle[3] = {
+                centerVertex, pos1, pos2
+            };
+
+            cg::Triangle(triangle);
+        }
+
+        if (style.border && !(flags & NO_BORDER))
+            cg::UnfilledSemiCircle(center, radius, style.borderThickness, direction, flags | USE_SECONDARY_COLOR);
+    }
+
+    void UnfilledSemiCircle(cg::Vec2f center, int radius, int thickness, int direction, unsigned int flags){
+        const cg::Style style = cg::GetCurrentStyle();
+        const cg::Color color = flags & USE_SECONDARY_COLOR ? style.secondaryColor : style.primaryColor;
+
+        float step = PI / (float)style.quality / 2.f;
+        float offset = step * (float)style.quality * (float)direction;
+
+        cg::Vertex centerVertex(center, color);
+        for (int i = 0; i < style.quality; i++){
+            cg::Vertex outer1(center + cg::Vec2f(sin(step * i + offset) * radius, cos(step * i + offset) * radius), color);
+            cg::Vertex outer2(center + cg::Vec2f(sin(step * (i+1) + offset) * radius, cos(step * (i+1) + offset) * radius), color);
+            cg::Vec2f dirToCenter1 = (cg::Vec2f(outer1.pos) - center);
+            cg::Vec2f dirToCenter2 = (cg::Vec2f(outer2.pos) - center);
+
+            cg::Vertex inner1(cg::Vec2f(outer1.pos) - dirToCenter1.Normalized() * thickness, color);
+            cg::Vertex inner2(cg::Vec2f(outer2.pos) - dirToCenter2.Normalized() * thickness, color);
+
+            cg::Vertex triangle1[3] = {
+                outer1, outer2, inner1
+            };
+            cg::Triangle(triangle1);
+
+            cg::Vertex triangle2[3] = {
+                inner1, inner2, outer2
+            };
+            cg::Triangle(triangle2);
+        }
+    }
+
+    void Triangle(cg::Vertex* vertices){
+        // Convert pixel positions to normalized device coordinates (NDC) and convert color values from 0-255 to 0-1
+        int width, height;
+        glfwGetWindowSize(cg::GetWindow(), &width, &height);
+
+        if (width == 0 || height == 0) return;
+
+        cg::Vertex vertices3D[3];
+        for (int i = 0; i < 3; i++){
+            vertices3D[i].pos.x = ((float)vertices[i].pos.x / (float)width - 0.5f) * 2.f;
+            vertices3D[i].pos.y = ((float)vertices[i].pos.y / (float)height - 0.5f) * 2.f;
+            vertices3D[i].pos.z = 0.f; // 2D triangle so set the z value to zero
+
+            vertices3D[i].color.r = (float)vertices[i].color.r / 255.f;
+            vertices3D[i].color.g = (float)vertices[i].color.g / 255.f;
+            vertices3D[i].color.b = (float)vertices[i].color.b / 255.f;
+        }
+        
+        cg::Triangle3D(vertices3D);
+    }
+
+    void Triangle3D(cg::Vertex* vertices){
+        // Convert vectors to an array
+        float triangle[18];
+        for (int i = 0; i < 3; i++){
+            triangle[i * 6 + 0] = cg::clamp11(vertices[i].pos.x);
+            triangle[i * 6 + 1] = cg::clamp11(vertices[i].pos.y);
+            triangle[i * 6 + 2] = cg::clamp11(vertices[i].pos.z);
+
+            triangle[i * 6 + 3] = cg::clamp01(vertices[i].color.r);
+            triangle[i * 6 + 4] = cg::clamp01(vertices[i].color.g);
+            triangle[i * 6 + 5] = cg::clamp01(vertices[i].color.b);
+        }
+        cg::PushTriangle(triangle);
+    }
+}
