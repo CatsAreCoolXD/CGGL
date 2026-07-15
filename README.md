@@ -1,7 +1,7 @@
 
 # CGGL
 
-Hey welcome to my passion project CGG!
+Hey welcome to my passion project CGGL!
 Made with C++ and OpenGL.
 
 
@@ -11,15 +11,15 @@ Made with C++ and OpenGL.
 
 It's a graphics & GUI library for C++.
 
-#### Why should I use CGG
+#### Why should I use CGGL
 
 Cause it's super good and has all the stuff you will ever need.
 
-#### What does CGG stand for
+#### What does CGGL stand for
 
-Cat's Graphics & GUI Library.
+Cat's Graphics & GUI Library. Or Cool Graphics & GUI Library. Your pick.
 
-#### How do I set up CGG
+#### How do I set up CGGL
 
 It's on the first page of the wiki.
 
