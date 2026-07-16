@@ -15,9 +15,18 @@
 #define WINDOW_MODE_FULLSCREEN 1
 #define WINDOW_MODE_FULLSCREEN_BORDERLESS 2
 
+#define WINDOW_FLAG_RESIZABLE 1u
+#define WINDOW_FLAG_
+
 namespace cg {
+    struct WindowSettings {
+        bool resizable = false, antiAliasing = false;
+        int antiAliasingLevel = 8;
+        int windowMode = WINDOW_MODE_WINDOWED;
+    };
+
     // Initialize CGGL.
-    void Initialize(std::string windowName = "CGGL Window", cg::Vec2i size = cg::Vec2i{1920, 1080}, int windowMode = WINDOW_MODE_WINDOWED, bool resizable = false);
+    void Initialize(std::string windowName = "CGGL Window", cg::Vec2i size = cg::Vec2i{1920, 1080}, cg::WindowSettings settings = cg::WindowSettings());
 
     GLFWwindow* GetWindow();
     

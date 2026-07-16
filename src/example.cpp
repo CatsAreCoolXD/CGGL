@@ -2,7 +2,9 @@
 #include "cggl.h"
 
 int main(){
-    cg::Initialize("CGGL Window", cg::Vec2i(1920, 1080), WINDOW_MODE_WINDOWED, true);
+    cg::WindowSettings settings;
+    settings.antiAliasing = true;
+    cg::Initialize("CGGL Window", cg::Vec2i(1920, 1080), settings);
     cg::SetFPSLimit(60);
 
     cg::SetBackgroundColor(cg::Color(70, 83, 98));

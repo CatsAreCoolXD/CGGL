@@ -18,16 +18,20 @@ namespace cg {
         }
     }
 
-    void Initialize(std::string windowName, cg::Vec2i size, int windowMode, bool resizable){
+    void Initialize(std::string windowName, cg::Vec2i size, cg::WindowSettings settings){
         if (!glfwInit()){
             throw std::runtime_error("Couldn't initialize GLFW");
         }
 
-        glfwWindowHint(GLFW_RESIZABLE, resizable);
+        glfwWindowHint(GLFW_RESIZABLE, settings.resizable);
 
-        if (windowMode == WINDOW_MODE_WINDOWED) window = glfwCreateWindow(size.x, size.y, windowName.c_str(), NULL, NULL);
-        else if (windowMode == WINDOW_MODE_FULLSCREEN) window = glfwCreateWindow(size.x, size.y, windowName.c_str(), glfwGetPrimaryMonitor(), NULL); 
-        else if (windowMode == WINDOW_MODE_FULLSCREEN_BORDERLESS){
+        if (settings.antiAliasing){
+            glfwWindowHint(GLFW_SAMPLES, settings.antiAliasingLevel);
+        }
+
+        if (settings.windowMode == WINDOW_MODE_WINDOWED) window = glfwCreateWindow(size.x, size.y, windowName.c_str(), NULL, NULL);
+        else if (settings.windowMode == WINDOW_MODE_FULLSCREEN) window = glfwCreateWindow(size.x, size.y, windowName.c_str(), glfwGetPrimaryMonitor(), NULL); 
+        else if (settings.windowMode == WINDOW_MODE_FULLSCREEN_BORDERLESS){
             const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
  
             glfwWindowHint(GLFW_RED_BITS, mode->redBits);
@@ -46,6 +50,9 @@ namespace cg {
         if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)){
             throw std::runtime_error("Couldn't load OpenGL function pointers");
         }
+
+        if (settings.antiAliasing)
+            glEnable(GL_MULTISAMPLE);
 
         glViewport(0, 0, size.x, size.y);
         glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
