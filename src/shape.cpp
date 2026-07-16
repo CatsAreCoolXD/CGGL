@@ -2,6 +2,7 @@
 #include "window.h"
 #include "style.h"
 #include "types.h"
+#include "draw.h"
 
 #include <iostream>
 
@@ -9,7 +10,7 @@ namespace cg {
     void Quad(cg::Vec2f pos, int size, unsigned int flags){
         cg::Vec2f origin = flags & CENTERED ? (pos - cg::Vec2f(size / 2.f, size / 2.f)) : pos;
         if (flags & CENTERED) flags &= ~CENTERED;
-        
+
         cg::Rectangle(origin, cg::Vec2f(size, size), flags | NO_BORDER);
     }
 
@@ -241,16 +242,37 @@ namespace cg {
 
     void Triangle3D(cg::Vertex* vertices){
         // Convert vectors to an array
-        float triangle[18];
-        for (int i = 0; i < 3; i++){
-            triangle[i * 6 + 0] = cg::clamp11(vertices[i].pos.x);
-            triangle[i * 6 + 1] = cg::clamp11(vertices[i].pos.y);
-            triangle[i * 6 + 2] = cg::clamp11(vertices[i].pos.z);
+        if (!cg::IsUsingTexture()){
+            float triangle[18];
+            for (int i = 0; i < 3; i++){
+                triangle[i * 6 + 0] = cg::clamp11(vertices[i].pos.x);
+                triangle[i * 6 + 1] = cg::clamp11(vertices[i].pos.y);
+                triangle[i * 6 + 2] = cg::clamp11(vertices[i].pos.z);
 
-            triangle[i * 6 + 3] = cg::clamp01(vertices[i].color.r);
-            triangle[i * 6 + 4] = cg::clamp01(vertices[i].color.g);
-            triangle[i * 6 + 5] = cg::clamp01(vertices[i].color.b);
+                triangle[i * 6 + 3] = cg::clamp01(vertices[i].color.r);
+                triangle[i * 6 + 4] = cg::clamp01(vertices[i].color.g);
+                triangle[i * 6 + 5] = cg::clamp01(vertices[i].color.b);
+            }
+            cg::PushTriangle(triangle);
+        } else {
+            cg::Vec2f texOrigin = cg::GetTextureOrigin();
+            cg::Vec2f texSize = cg::GetTextureSize();
+            cg::Color tint = cg::GetTextureTint();
+            cg::Vec2f flip = cg::GetTextureFlip();
+            float triangle[24];
+            for (int i = 0; i < 3; i++){
+                triangle[i * 8 + 0] = cg::clamp11(vertices[i].pos.x);
+                triangle[i * 8 + 1] = cg::clamp11(vertices[i].pos.y);
+                triangle[i * 8 + 2] = cg::clamp11(vertices[i].pos.z);
+
+                triangle[i * 8 + 3] = cg::clamp01(tint.r / 255.f);
+                triangle[i * 8 + 4] = cg::clamp01(tint.g / 255.f);
+                triangle[i * 8 + 5] = cg::clamp01(tint.b / 255.f);
+
+                triangle[i * 8 + 6] = (triangle[i * 8 + 0] - texOrigin.x) / texSize.x;
+                triangle[i * 8 + 7] = flip.y - (triangle[i * 8 + 1] - texOrigin.y) / texSize.y;
+            }
+            cg::PushTriangle(triangle);
         }
-        cg::PushTriangle(triangle);
     }
 }

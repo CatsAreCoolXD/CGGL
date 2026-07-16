@@ -4,6 +4,14 @@
 #include <algorithm>
 #include <string>
 #include <cmath>
+#include <vector>
+
+#include <glad/glad.h>
+
+#define REPEAT GL_REPEAT
+#define MIRRORED_REPEAT GL_MIRRORED_REPEAT
+#define CLAMP_TO_EDGE GL_CLAMP_TO_EDGE
+#define CLAMP_TO_BORDER GL_CLAMP_TO_BORDER
 
 namespace cg {
     template<typename T>

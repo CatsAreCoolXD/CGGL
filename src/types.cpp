@@ -1,10 +1,12 @@
 #include "types.h"
+#include "window.h"
 
 #include <string>
 #include <iostream>
 #include <fstream>
 
 #include <glad/glad.h>
+#include <GLFW/glfw3.h>
 
 namespace cg {
     float clamp(float v, float min, float max){
