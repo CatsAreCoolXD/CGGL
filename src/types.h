@@ -15,18 +15,26 @@
 
 namespace cg {
     template<typename T>
-    class Vec3; // forward declare Vec3 so Vec2 can reference it
+    class Vec3; // Forward declare Vec3 so Vec2 can use it
+
     template<typename T>
     class Vec2 {
         public:
             Vec2() : x(0), y(0) {}
             Vec2(T x, T y) : x(x), y(y) {}
 
-            float Length() {
-                return std::sqrt(x*x + y*y);
+            float LengthSquared() {
+                return x*x + y*y;
             }
-            Vec2 Normalized() {
-                return (*this) / Length();
+            float Length(){
+                return std::sqrt(Vec2::LengthSquared());
+            }
+            Vec2<T> Normalized() {
+                return (*this) / Vec2::Length();
+            }
+
+            float Dot(Vec2& other){
+                return x * other.x + y * other.y;
             }
 
             template<typename U>
@@ -34,27 +42,51 @@ namespace cg {
 
             template<typename U>
             Vec2(const Vec2<U>& other) : x((T)other.x), y((T)other.y) {}
+
+            Vec2<T>& operator=(const Vec2<T>& other) {
+                x = other.x;
+                y = other.y;
+                return *this;
+            }
+
+            template<typename U>
+            Vec2<T>& operator=(const Vec2<U>& other) {
+                x = (T)other.x;
+                y = (T)other.y;
+                return *this;
+            }
+
             T x, y;
     };
 
     template<typename T>
-    Vec2<T> operator+(Vec2<T> l, Vec2<T> r) {
+    Vec2<T> operator+(Vec2<T>& l, Vec2<T>& r) {
         return Vec2<T>(l.x + r.x, l.y + r.y);
     }
 
     template<typename T>
-    Vec2<T> operator-(Vec2<T> l, Vec2<T> r) {
+    Vec2<T> operator-(Vec2<T>& l, Vec2<T>& r) {
         return Vec2<T>(l.x - r.x, l.y - r.y);
     }
 
     template<typename T>
-    Vec2<T> operator/(Vec2<T> l, float r) {
+    Vec2<T> operator/(Vec2<T>& l, float r) {
         return Vec2<T>(l.x / r, l.y / r);
     }
 
     template<typename T>
-    Vec2<T> operator*(Vec2<T> l, float r) {
+    Vec2<T> operator*(Vec2<T>& l, float r) {
         return Vec2<T>(l.x * r, l.y * r);
+    }
+
+    template<typename T>
+    Vec2<T> operator/(Vec2<T>& l, Vec2<T>& r) {
+        return Vec2<T>(l.x / r.x, l.y / r.y);
+    }
+
+    template<typename T>
+    Vec2<T> operator*(Vec2<T&> l, Vec2<T>& r) {
+        return Vec2<T>(l.x * r.x, l.y * r.y);
     }
 
     using Vec2f = Vec2<float>;
@@ -73,6 +105,26 @@ namespace cg {
             
             template<typename U>
             Vec3(const Vec2<U>& other) : x((T)other.x), y((T)other.y), z((T)0) {}
+
+            float LengthSquared() {
+                return x*x + y*y + z*z;
+            }
+            float Length(){
+                return std::sqrt(Vec3::LengthSquared());
+            }
+            Vec3<T> Normalized() {
+                return (*this) / Vec3::Length();
+            }
+
+            template<typename U>
+            float Dot(Vec3<U>& other){
+                return x * (T)other.x + y * (T)other.y + z * (T)other.z;
+            }
+
+            template<typename U>
+            Vec3<T> Cross(Vec3<U>& other){
+                return Vec3<T>(y * (T)other.z - b * (T)other.y, z * (T)other.x - x * (T)other.z, x * (T)other.y - y * (T)other.x);
+            }
 
             Vec3<T>& operator=(const Vec3<T>& other) {
                 x = other.x;
@@ -94,23 +146,43 @@ namespace cg {
     };
 
     template<typename T>
-    Vec3<T> operator+(Vec3<T> l, Vec3<T> r) {
+    Vec3<T> operator+(Vec3<T>& l, Vec3<T>& r) {
         return Vec3<T>(l.x + r.x, l.y + r.y, l.z + r.z);
     }
 
     template<typename T>
-    Vec3<T> operator-(Vec3<T> l, Vec3<T> r) {
+    Vec3<T> operator-(Vec3<T>& l, Vec3<T>& r) {
         return Vec3<T>(l.x - r.x, l.y - r.y, l.z - r.z);
     }
 
     template<typename T>
-    Vec3<T> operator+(Vec3<T> l, Vec2<T> r) {
+    Vec3<T> operator+(Vec3<T>& l, Vec2<T>& r) {
         return Vec3<T>(l.x + r.x, l.y + r.y, l.z);
     }
 
     template<typename T>
-    Vec3<T> operator-(Vec3<T> l, Vec2<T> r) {
+    Vec3<T> operator-(Vec3<T>& l, Vec2<T>& r) {
         return Vec3<T>(l.x - r.x, l.y - r.y, l.z);
+    }
+
+    template<typename T>
+    Vec3<T> operator/(Vec3<T>& l, float r) {
+        return Vec3<T>(l.x / r, l.y / r, l.z / r);
+    }
+
+    template<typename T>
+    Vec3<T> operator*(Vec3<T&> l, float r) {
+        return Vec3<T>(l.x * r, l.y * r, l.z / r);
+    }
+
+    template<typename T>
+    Vec3<T> operator/(Vec3<T>& l, Vec3<T>& r) {
+        return Vec3<T>(l.x / r.x, l.y / r.y, l.z / r.z);
+    }
+
+    template<typename T>
+    Vec3<T> operator*(Vec3<T&> l, Vec3<T>& r) {
+        return Vec3<T>(l.x * r.x, l.y * r.y, l.z / r.z);
     }
 
     using Vec3f = Vec3<float>;
@@ -158,6 +230,9 @@ namespace cg {
             void SetBool(const std::string& name, bool value) const;
             void SetInt(const std::string& name, int value) const;
             void SetFloat(const std::string& name, float value) const;
+            void SetFloats(const std::string& name, cg::Vec2f value) const;
+            void SetFloats(const std::string& name, cg::Vec3f value) const;
+            void SetFloats(const std::string& name, cg::Color value) const;
 
             unsigned int id;
         private:

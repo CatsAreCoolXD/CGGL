@@ -83,4 +83,13 @@ namespace cg {
     void Shader::SetFloat(const std::string& name, float value) const {
         glUniform1f(glGetUniformLocation(id, name.c_str()), value);
     }
+    void Shader::SetFloats(const std::string& name, cg::Vec2f value) const {
+        glUniform2f(glGetUniformLocation(id, name.c_str()), value.x, value.y);
+    }
+    void Shader::SetFloats(const std::string& name, cg::Vec3f value) const {
+        glUniform3f(glGetUniformLocation(id, name.c_str()), value.x, value.y, value.z);
+    }
+    void Shader::SetFloats(const std::string& name, cg::Color value) const {
+        glUniform4f(glGetUniformLocation(id, name.c_str()), value.r, value.g, value.b, value.a);
+    }
 }
