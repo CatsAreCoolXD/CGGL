@@ -18,14 +18,25 @@ namespace cg {
         }
     }
 
-    void Initialize(std::string windowName, cg::Vec2i size, bool resizable){
+    void Initialize(std::string windowName, cg::Vec2i size, int windowMode, bool resizable){
         if (!glfwInit()){
             throw std::runtime_error("Couldn't initialize GLFW");
         }
 
         glfwWindowHint(GLFW_RESIZABLE, resizable);
 
-        window = glfwCreateWindow(size.x, size.y, windowName.c_str(), NULL, NULL);
+        if (windowMode == WINDOW_MODE_WINDOWED) window = glfwCreateWindow(size.x, size.y, windowName.c_str(), NULL, NULL);
+        else if (windowMode == WINDOW_MODE_FULLSCREEN) window = glfwCreateWindow(size.x, size.y, windowName.c_str(), glfwGetPrimaryMonitor(), NULL); 
+        else if (windowMode == WINDOW_MODE_FULLSCREEN_BORDERLESS){
+            const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+ 
+            glfwWindowHint(GLFW_RED_BITS, mode->redBits);
+            glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
+            glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
+            glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
+
+            window = glfwCreateWindow(mode->width, mode->height, windowName.c_str(), glfwGetPrimaryMonitor(), NULL); 
+        }
         if (!window){
             glfwTerminate();
             throw std::runtime_error("Couldn't open window");
