@@ -7,6 +7,7 @@
 #include "types.h"
 #include "style.h"
 #include "draw.h"
+#include "input.h"
 
 namespace cg {
     namespace {
@@ -15,6 +16,10 @@ namespace cg {
         void framebuffer_size_callback(GLFWwindow* window, int width, int height)
         {
             glViewport(0, 0, width, height);
+        }
+
+        void mouse_scroll_callback(GLFWwindow* window, double x, double y){
+            cg::Input::SetMouseScroll(cg::Vec2d(x, y));
         }
     }
 
@@ -56,6 +61,8 @@ namespace cg {
 
         glViewport(0, 0, size.x, size.y);
         glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+
+        glfwSetScrollCallback(window, mouse_scroll_callback);
 
         cg::InitializeDrawing();
     }

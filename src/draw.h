@@ -9,6 +9,9 @@ namespace cg {
 
     class Texture;
     void Draw(cg::Texture& tex, int flags = 0);
+    void Draw(cg::Texture& tex, cg::Vec2f size, int flags = 0);
+    void Draw(cg::Texture& tex, cg::Vec2i origin, int flags = 0);
+    void Draw(cg::Texture& tex, cg::Vec2f origin, cg::Vec2f size, int flags = 0);
 
     void PushTriangle(float* triangle);
 

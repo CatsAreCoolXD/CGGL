@@ -2,6 +2,7 @@
 #include "style.h"
 #include "window.h"
 #include "shape.h"
+#include "input.h"
 
 #include <iostream>
 
@@ -46,7 +47,7 @@ namespace cg {
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         // Push default style to style stack
-        cg::PushStyle(cg::GetStyle());
+        cg::Style::PushStyle(cg::Style::GetStyle());
     }
 
     double GetDeltatime(){
@@ -85,6 +86,9 @@ namespace cg {
 
         // Check for events and update the window state
         glfwPollEvents();
+
+        // Update input states
+        cg::Input::UpdateInputStates();
 
         // Max frames per second
         while (true){
@@ -198,8 +202,27 @@ namespace cg {
 
     void Draw(cg::Texture& tex, int flags){
         cg::UseTexture(tex);
-        cg::Rectangle(tex.GetOrigin(), tex.GetSize(), flags & ~CENTERED);
+        cg::Rectangle(tex.GetOrigin(), tex.GetSize(), flags & ~FLAG_CENTERED);
         cg::StopUsingTexture();
+    }
+
+    void Draw(cg::Texture& tex, cg::Vec2f size, int flags){
+        tex.SetSize(size);
+
+        cg::Draw(tex, flags);
+    }
+
+    void Draw(cg::Texture& tex, cg::Vec2i origin, int flags){
+        tex.SetOrigin(origin);
+
+        cg::Draw(tex, flags);
+    }
+
+    void Draw(cg::Texture& tex, cg::Vec2f origin, cg::Vec2f size, int flags){
+        tex.SetOrigin(origin);
+        tex.SetSize(size);
+
+        cg::Draw(tex, flags);
     }
 
     void UseTexture(cg::Texture& tex){

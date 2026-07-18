@@ -3,3 +3,4 @@
 #include "style.h"
 #include "shape.h"
 #include "draw.h"
+#include "input.h"

@@ -3,9 +3,9 @@
 
 #include "types.h"
 
-#define CENTERED 1u
-#define NO_BORDER 2u
-#define USE_SECONDARY_COLOR 4u
+#define FLAG_CENTERED 1u
+#define FLAG_NO_BORDER 2u
+#define FLAG_USE_SECONDARY_COLOR 4u
 
 #define TOP_RIGHT 0
 #define BOTTOM_RIGHT 1
@@ -33,7 +33,6 @@ namespace cg {
     void UnfilledSemiCircle(cg::Vec2f center, int radius, int thickness, int direction, unsigned int flags);
 
     void Triangle(cg::Vertex* vertices);
-
     void Triangle3D(cg::Vertex* vertices);
 }
 
