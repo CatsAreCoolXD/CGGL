@@ -3,6 +3,7 @@
 #include "window.h"
 #include "shape.h"
 #include "input.h"
+#include "text.h"
 
 #include <iostream>
 
@@ -28,15 +29,15 @@ namespace cg {
         unsigned int framerateLimit = 60;
         double lastFrameTimePoint = glfwGetTime();
         double deltaTime = 0;
+        std::vector<double> fpsList;
 
-        cg::Shader shaderProgram, texShaderProgram;
+        cg::Shader shaderProgram;
         GLuint VAO, VBO, EBO;
     }
 
     void InitializeDrawing(){
         // Create the shader program
         shaderProgram.Create("src/vert.glsl", "src/frag.glsl");
-        texShaderProgram.Create("src/vertTex.glsl", "src/fragTex.glsl");
         
         glGenVertexArrays(1, &VAO);
         glGenBuffers(1, &VBO);
@@ -52,6 +53,15 @@ namespace cg {
 
     double GetDeltatime(){
         return deltaTime;
+    }
+
+    double GetAverageFPS(){
+        if (fpsList.empty()) return 0.0;
+        double sum = 0.0;
+        for (double fps : fpsList){
+            sum += fps;
+        }
+        return sum / fpsList.size();
     }
 
     void SetFPSLimit(unsigned int fpsLimit){
@@ -100,6 +110,11 @@ namespace cg {
         double now = glfwGetTime();
         deltaTime = now - lastFrameTimePoint;
         lastFrameTimePoint = now;
+
+        if (fpsList.size() > 30){
+            fpsList.pop_back();
+            fpsList.insert(fpsList.begin(), 1.0 / deltaTime);
+        } else fpsList.push_back(1.0 / deltaTime);
     }
 
     void PushTriangle(float* triangle){
@@ -152,6 +167,7 @@ namespace cg {
             glEnableVertexAttribArray(1);
 
             // Use the shader program
+            shaderProgram.SetInt("renderType", NORMAL_RENDERING);
             shaderProgram.Use();
 
             // Draw the triangles
@@ -179,7 +195,8 @@ namespace cg {
             glEnableVertexAttribArray(2);
 
             // Use the texture shader program
-            texShaderProgram.Use();
+            shaderProgram.SetInt("renderType", (textures[texture]->IsGlyph() ? GLYPH_RENDERING : TEXTURE_RENDERING));
+            shaderProgram.Use();
 
             // Bind the texture and draw the triangles
             glBindTexture(GL_TEXTURE_2D, textures[texture]->textureId);
@@ -256,6 +273,10 @@ namespace cg {
         return textures.back()->flip; 
     }
 
+    cg::Texture* GetCurrentTexture(){
+        return textures.back();
+    }
+
     Texture::Texture(const char* path, int wrapping) {
         Texture::LoadImage(path, wrapping);
     }
@@ -293,6 +314,34 @@ namespace cg {
         stbi_image_free(data);
 
         tint = cg::Color(255, 255, 255);
+    }
+
+    void Texture::LoadGlyph(FT_Face& face){
+        // Create and bind the texture
+        glGenTextures(1, &textureId);
+        glBindTexture(GL_TEXTURE_2D, textureId);
+
+        // Set the texture wrapping/filtering options
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);	
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        width = face->glyph->bitmap.width;
+        height = face->glyph->bitmap.rows;
+
+        // Generate the texture
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, face->glyph->bitmap.buffer);
+
+        size.x = width;
+        size.y = height;
+
+        // Calculate NDC
+        Texture::SetSize(size);
+        Texture::SetOrigin(cg::Vec2f(0,0));
+
+        tint = cg::Color(255, 255, 255);
+        isGlyph = true;
     }
 
     void Texture::SetOrigin(cg::Vec2f pos, bool centered){

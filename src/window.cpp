@@ -8,6 +8,7 @@
 #include "style.h"
 #include "draw.h"
 #include "input.h"
+#include "text.h"
 
 namespace cg {
     namespace {
@@ -65,6 +66,7 @@ namespace cg {
         glfwSetScrollCallback(window, mouse_scroll_callback);
 
         cg::InitializeDrawing();
+        cg::InitiliazeFreeType();
     }
 
     GLFWwindow* GetWindow() {
@@ -79,6 +81,7 @@ namespace cg {
 
     void Terminate(){
         glfwTerminate();
+        cg::ShutdownFreetype();
     }
 }
 

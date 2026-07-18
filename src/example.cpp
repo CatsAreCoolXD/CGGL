@@ -6,11 +6,9 @@ int main(){
     settings.resizable = true;
     settings.antiAliasing = true;
     cg::Initialize("CGGL Window", cg::Vec2i(1920, 1080), settings);
-    cg::SetFPSLimit(60);
+    cg::SetFPSLimit(180);
 
     cg::SetBackgroundColor(cg::Color(70, 83, 98));
-
-    //cg::SetRenderingMode(RENDERING_MODE_WIREFRAME);
 
     cg::Texture tex("src/tex/container.jpg");
     tex.SetSize(cg::Vec2f(200, 200));
@@ -21,6 +19,9 @@ int main(){
     cg::Vec2f center(1920 / 2, 1080 / 2);
     tex.SetOrigin(center - cg::Vec2f(600.f, -200.f), true);
     tex2.SetOrigin(center, true);
+
+    cg::Font font("src/fonts/OpenSans-Bold.ttf", 48);
+    cg::PushFont(font);
 
     float roundedSize = 15;
 
@@ -64,6 +65,9 @@ int main(){
 
         cg::UnfilledSquare(center + cg::Vec2f(600.f, -300.f), 150, 5, FLAG_CENTERED);
         cg::UnfilledRoundedSquare(center + cg::Vec2f(600.f, -100.f), 150, 5, roundedSize, FLAG_CENTERED);
+
+        //cg::Text("Example text", center + cg::Vec2f(300.f, 0.f));
+        cg::Text("FPS: " + std::to_string((int)cg::GetAverageFPS()), cg::Vec2f(10.f, 1000.f));
 
         cg::Draw();
         cg::NewFrame();

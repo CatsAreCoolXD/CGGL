@@ -4,3 +4,4 @@
 #include "shape.h"
 #include "draw.h"
 #include "input.h"
+#include "text.h"

@@ -257,6 +257,7 @@ namespace cg {
             cg::Vec2f texSize = cg::GetTextureSize();
             cg::Color tint = cg::GetTextureTint();
             cg::Vec2f flip = cg::GetTextureFlip();
+            bool renderingGlyph = cg::IsUsingTexture() && cg::GetCurrentTexture()->IsGlyph();
             float triangle[24];
             for (int i = 0; i < 3; i++){
                 triangle[i * 8 + 0] = cg::clamp11(vertices[i].pos.x);
@@ -269,6 +270,8 @@ namespace cg {
 
                 triangle[i * 8 + 6] = (triangle[i * 8 + 0] - texOrigin.x) / texSize.x;
                 triangle[i * 8 + 7] = flip.y - (triangle[i * 8 + 1] - texOrigin.y) / texSize.y;
+                if (renderingGlyph && triangle[i * 8 + 6] < 0.01f) triangle[i * 8 + 6] = 0.0f;
+                if (renderingGlyph && triangle[i * 8 + 7] < 0.01f) triangle[i * 8 + 7] = 0.0f;
             }
             cg::PushTriangle(triangle);
         }

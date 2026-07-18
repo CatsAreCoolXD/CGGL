@@ -1,4 +1,14 @@
+#ifndef DRAW_H
+#define DRAW_H
+
 #include "types.h"
+
+#include <ft2build.h>
+#include FT_FREETYPE_H
+
+#define NORMAL_RENDERING 0
+#define TEXTURE_RENDERING 1
+#define GLYPH_RENDERING 2
 
 namespace cg {
     void InitializeDrawing();
@@ -16,17 +26,19 @@ namespace cg {
     void PushTriangle(float* triangle);
 
     double GetDeltatime();
+    double GetAverageFPS();
     bool IsUsingTexture();
     cg::Vec2f GetTextureOrigin();
     cg::Vec2f GetTextureSize();
     cg::Color GetTextureTint();
     cg::Vec2f GetTextureFlip();
+    cg::Texture* GetCurrentTexture();
 
     // Set the FPS limit, which is 60 by default.
     void SetFPSLimit(unsigned int fpsLimit);
     void SetBackgroundColor(cg::Color newColor);
 
-    // Set the rendering mode. Choose between WIREFRAME_MODE and FILL_MODE. FILL_MODE is default
+    // Set the rendering mode. Choose between WIREFRAME_MODE and FILL_MODE. FILL_MODE is default.
     void SetRenderingMode(int mode);
 
     class Texture {
@@ -35,6 +47,7 @@ namespace cg {
             Texture(const char* path, int wrapping = REPEAT);
 
             void LoadImage(const char* path, int wrapping = REPEAT);
+            void LoadGlyph(FT_Face& face);
 
             void SetOrigin(cg::Vec2f pos, bool centered = false);
             void SetSize(cg::Vec2f newSize);
@@ -44,6 +57,7 @@ namespace cg {
             cg::Vec2f GetOrigin() const { return origin; }
             cg::Vec2f GetSize() const { return size; }
             cg::Color GetTint() const { return tint; }
+            bool IsGlyph() const { return isGlyph; }
 
             cg::Vec2f GetOriginNDC() const { return originNDC; }
             cg::Vec2f GetSizeNDC() const { return sizeNDC; }
@@ -58,8 +72,11 @@ namespace cg {
             cg::Vec2f origin, originNDC, size, sizeNDC;
             cg::Color tint;
             int width, height;
+            bool isGlyph= false;
     };
 
     void UseTexture(cg::Texture& tex);
     void StopUsingTexture();
 }
+
+#endif
