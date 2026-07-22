@@ -1,36 +1,27 @@
-
 # CGGL
 
-Hey welcome to my passion project CGGL!
-Made with C++ and OpenGL.
-
+Welcome to my passion project, CGGL!
 
 ## SIQ (Super Important Questions)
 
 #### What's this
 
-It's a graphics & GUI library for C++.
+CGGL is an all-purpose C++ library, which currently has the following features:
+- Math (Vectors)
+- Graphics
+- Basic shape drawing
+- Textures
+- Text
+- Input
 
-#### Why should I use CGGL
+#### What does CGGL stand for?
 
-Cause it's super good and has all the stuff you will ever need.
+Cat's Graphics & GUI Library. It started out as a library only meant for graphics and GUI, but that changed and I like the name so im keeping it.
 
-#### What does CGGL stand for
-
-Cat's Graphics & GUI Library. Or Cool Graphics & GUI Library. Your pick.
-
-#### How do I set up CGGL
-
-It's on the first page of the wiki.
-
-#### How do i create a window
+#### How do i ...?
 
 The wiki knows it all.
 
-#### How do i ...
+## Disclaimer
 
-You're asking too many questions. Just go to the wiki.
-
-#### Who are you?
-
-...
+CGGL is not intended for commercial use. Actually, it's not even usable yet. It's still a massive W.I.P and I plane on adding and improving features for as long as possible. I want CGGL to become an all-purpose C++ library.
