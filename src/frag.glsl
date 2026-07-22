@@ -15,7 +15,7 @@ void main()
         vec4 texCol = texture(tex, texCoord);
         FragColor = vec4(color, 1.0) * texCol;
     } 
-    else if (renderType == 2){ // Text
+    else if (renderType == 2){ // Glyph
         float alpha = texture(tex, texCoord).r;
         FragColor = vec4(color, alpha);
     }

@@ -33,9 +33,9 @@ namespace cg
 
     void Text(std::string text, cg::Vec2f pos);
 
-    void PushFont(cg::Font font);
-    cg::Font PopFont();
-    cg::Font GetCurrentFont();
+    void PushFont(cg::Font& font);
+    cg::Font* PopFont();
+    cg::Font* GetCurrentFont();
 }
 
 #endif

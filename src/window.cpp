@@ -69,6 +69,10 @@ namespace cg {
         cg::InitiliazeFreeType();
     }
 
+    void ToggleVSync(bool on){
+        glfwSwapInterval(on);
+    }
+
     GLFWwindow* GetWindow() {
         return window;
     }

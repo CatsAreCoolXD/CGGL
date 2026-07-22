@@ -3,9 +3,9 @@
 
 #include "types.h"
 
-#define FLAG_CENTERED 1u
-#define FLAG_NO_BORDER 2u
-#define FLAG_USE_SECONDARY_COLOR 4u
+#define FLAG_CENTERED 0x1000
+#define FLAG_NO_BORDER 0x0100
+#define FLAG_USE_SECONDARY_COLOR 0x0010
 
 #define TOP_RIGHT 0
 #define BOTTOM_RIGHT 1

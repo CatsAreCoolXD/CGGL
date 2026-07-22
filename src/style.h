@@ -4,21 +4,25 @@
 #include "types.h"
 
 namespace cg {
-    namespace Style {
-        struct Style {
-            cg::Color primaryColor;
-            cg::Color secondaryColor;
-            bool border;
-            int quality;
-            int borderThickness;
-        };
+    struct Style {
+        cg::Color primaryColor;
+        cg::Color secondaryColor;
+        bool border;
+        int quality;
+        int borderThickness;
+    };
 
-        Style GetStyle(cg::Color primaryColor = cg::Color(149, 147, 217), cg::Color secondaryColor = cg::Color(239, 246, 238), int quality = 16, bool border = true, int borderThickness = 2);
+    void PushPrimaryColor(cg::Color col);
+    void PushSecondaryColor(cg::Color col);
+    void PushQuality(int quality);
+    void PushBorder(bool border);
+    void PushBorderThickness(int thickness);
 
-        void PushStyle(Style style);
-        Style PopStyle();
-        Style& GetCurrentStyle();
-    }
+    Style GetStyle(cg::Color primaryColor = cg::Color(149, 147, 217), cg::Color secondaryColor = cg::Color(239, 246, 238), int quality = 16, bool border = true, int borderThickness = 2);
+
+    void PushStyle(Style style);
+    Style PopStyle();
+    Style& GetCurrentStyle();
 }
 
 #endif

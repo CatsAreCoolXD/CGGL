@@ -56,6 +56,11 @@ namespace cg {
                 return *this;
             }
 
+            template<typename U>
+            bool operator==(const Vec2<U>& other) const {
+                return x == other.x && y == other.y;
+            }
+
             T x, y;
     };
 
@@ -100,6 +105,9 @@ namespace cg {
             Vec3() : x(0), y(0), z(0) {}
             Vec3(T x, T y, T z) : x(x), y(y), z(z) {}
 
+            T x, y, z;
+            T &r = x, &g = y, &b = z;
+
             template<typename U>
             Vec3(const Vec3<U>& other) : x((T)other.x), y((T)other.y), z((T)other.z) {}
             
@@ -141,8 +149,10 @@ namespace cg {
                 return *this;
             }
 
-            T x, y, z;
-            T &r = x, &g = y, &b = z;
+            template<typename U>
+            bool operator==(const Vec3<U>& other) const {
+                return x == other.x && y == other.y && z == other.z;
+            }
     };
 
     template<typename T>
@@ -203,20 +213,56 @@ namespace cg {
                 a = other.a;
                 return *this;
             }
+            
+            bool operator==(const Color& other) const {
+                return r == other.r && g == other.g && b == other.b && a == other.a;
+            }
     };
 
     class Vertex {
         public:
             Vertex() : pos(cg::Vec3f()), color(cg::Color()) {}
-            Vertex(cg::Vec3f pos, cg::Color color) : pos(pos), color(color) {}
-            Vertex(cg::Vec2f pos, cg::Color color) : pos(pos), color(color) {}
+            Vertex(cg::Vec3f pos, cg::Color color, cg::Vec2f texCoords = cg::Vec2f(0,0)) : pos(pos), color(color), texCoords(texCoords) {}
+            Vertex(cg::Vec2f pos, cg::Color color, cg::Vec2f texCoords = cg::Vec2f(0,0)) : pos(pos), color(color), texCoords(texCoords) {}
             cg::Vec3f pos;
             cg::Color color;
+            cg::Vec2f texCoords;
+
+            float* GetData(int size) const {
+                if (size == 6){
+                    float* vertex = new float[6];
+                    vertex[0] = pos.x;
+                    vertex[1] = pos.y;
+                    vertex[2] = pos.z;
+                    
+                    vertex[3] = color.r;
+                    vertex[4] = color.g;
+                    vertex[5] = color.b;
+                    return vertex;
+                }
+                float* vertex = new float[8];
+                vertex[0] = pos.x;
+                vertex[1] = pos.y;
+                vertex[2] = pos.z;
+                
+                vertex[3] = color.r;
+                vertex[4] = color.g;
+                vertex[5] = color.b;
+
+                vertex[6] = texCoords.x;
+                vertex[7] = texCoords.y;
+
+                return vertex;
+            }
 
             Vertex& operator=(const Vertex& other) {
                 pos = other.pos;
                 color = other.color;
                 return *this;
+            }
+
+            bool operator==(const Vertex& other) const {
+                return pos == other.pos && color == other.color && texCoords == other.texCoords;
             }
     };
 

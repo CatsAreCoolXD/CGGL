@@ -2,13 +2,14 @@
 #include "types.h"
 #include "draw.h"
 #include "shape.h"
+#include "style.h"
 
 #include <iostream>
 
 namespace cg {
     namespace {
         FT_Library freeType;
-        std::stack<cg::Font> fontStack;
+        std::stack<cg::Font*> fontStack;
     }
 
     void InitiliazeFreeType(){
@@ -50,33 +51,31 @@ namespace cg {
         FT_Done_Face(face);
     }
 
-    void PushFont(cg::Font font){
-        fontStack.push(font);
+    void PushFont(cg::Font& font){
+        fontStack.push(&font);
     }
 
-    cg::Font PopFont(){
-        if (fontStack.size() <= 1) {
-            if (fontStack.empty())
-                throw std::runtime_error("Fontstack is empty. Maybe you popped without pushing first?");
-            else
-                throw std::runtime_error("Only one font in fontstack. Maybe you popped without pushing first?");
+    cg::Font* PopFont(){
+        if (fontStack.empty()) {
+            std::cerr << "Fontstack is empty. Maybe you popped without pushing first?" << std::endl;
         }
-        cg::Font currentFont = fontStack.top();
+        cg::Font* currentFont = fontStack.top();
         fontStack.pop();
         return currentFont;
     }
 
-    cg::Font GetCurrentFont(){
+    cg::Font* GetCurrentFont(){
         return fontStack.top();
     }
 
     void Text(std::string text, cg::Vec2f pos){
-        cg::Font& font = fontStack.top();
+        cg::Font* font = fontStack.top();
 
         int i = 0;
         for (char& c : text){
-            FontCharacter& fontCharacter = font.characterMap[c];
+            FontCharacter& fontCharacter = font->characterMap[c];
             cg::Texture& tex = fontCharacter.tex;
+            tex.SetTint(cg::GetCurrentStyle().primaryColor);
             int x = pos.x + fontCharacter.bearing.x;
             int y = pos.y - (fontCharacter.size.y - fontCharacter.bearing.y);
             tex.SetOrigin(cg::Vec2f(x, y));

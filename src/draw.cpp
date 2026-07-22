@@ -15,12 +15,7 @@
 
 namespace cg {
     namespace {
-        std::vector<float> vertices;
-        std::vector<unsigned int> indices;
-
-        std::vector<std::vector<float>> textureVertices;
-        std::vector<std::vector<unsigned int>> textureIndices;
-        std::vector<cg::Texture*> textures;
+        std::vector<cg::TriangleBuffer> triangleBuffers;
 
         bool useTexture = false;
 
@@ -33,6 +28,10 @@ namespace cg {
 
         cg::Shader shaderProgram;
         GLuint VAO, VBO, EBO;
+
+        int usage = GL_DYNAMIC_DRAW;
+
+        std::vector<std::pair<int, int>> expectedVectorSizes;
     }
 
     void InitializeDrawing(){
@@ -48,7 +47,7 @@ namespace cg {
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         // Push default style to style stack
-        cg::Style::PushStyle(cg::Style::GetStyle());
+        cg::PushStyle(cg::GetStyle());
     }
 
     double GetDeltatime(){
@@ -76,20 +75,20 @@ namespace cg {
         glPolygonMode(GL_FRONT_AND_BACK, mode);
     }
 
-    void NewFrame(){
-        // Clear the vertexes and indices and allocate the same amount of memory, 
-        // since the amount of memory used probably wont change much in between frames.
-        int previousSize = vertices.size();
-        vertices.clear();
-        vertices.reserve(previousSize);
-        
-        previousSize = indices.size();
-        indices.clear();
-        indices.reserve(previousSize);
+    void SetUsageMode(int newUsage){
+        usage = newUsage;
+    }
 
-        textureVertices.clear();
-        textureIndices.clear();
-        textures.clear();
+    void NewFrame(){
+        expectedVectorSizes.clear();
+        expectedVectorSizes.resize(triangleBuffers.size(), {0, 0});
+        for (int i = 0; i < triangleBuffers.size(); i++){
+            cg::TriangleBuffer& buffer = triangleBuffers[i];
+            expectedVectorSizes[i].first = buffer.GetVertices().size();
+            expectedVectorSizes[i].second = buffer.GetIndices().size();
+        }
+
+        triangleBuffers.clear();
 
         glClearColor(colorToFloat(backgroundColor));
         glClear(GL_COLOR_BUFFER_BIT);
@@ -111,25 +110,63 @@ namespace cg {
         deltaTime = now - lastFrameTimePoint;
         lastFrameTimePoint = now;
 
-        if (fpsList.size() > 30){
-            fpsList.pop_back();
+        // Always have 1 second of data
+        if (fpsList.size() > 1.0 / deltaTime){
+            while (fpsList.size() > 1.0 / deltaTime - 1) fpsList.pop_back();
             fpsList.insert(fpsList.begin(), 1.0 / deltaTime);
-        } else fpsList.push_back(1.0 / deltaTime);
+        } else fpsList.insert(fpsList.begin(), 1.0 / deltaTime);
+    }
+
+    size_t HashVertex(float* vertex, int size){
+        size_t hash = 0;
+        for (int i = 0; i < size; i++){
+            uint32_t bits;
+            memcpy(&bits, &vertex[i], sizeof(float));
+
+            hash ^= bits * 0x9e3779b97f4a7c15ULL;
+            hash = (hash << 13) | (hash >> 51);
+        }
+        return hash;
+    }
+
+    void PushNewTriangleBuffer(cg::Texture* tex = nullptr){
+        triangleBuffers.emplace_back();
+        cg::TriangleBuffer& buffer = triangleBuffers.back();
+        if (tex != nullptr)
+            buffer = cg::TriangleBuffer(true, tex);
+        
+        // Only reserve the vectors if it actually matters
+        int i = triangleBuffers.size() - 1;
+        if (expectedVectorSizes.size() >= triangleBuffers.size() && expectedVectorSizes[i].first > 100){
+            buffer.GetVertices().reserve(expectedVectorSizes[i].first);
+            buffer.GetIndices().reserve(expectedVectorSizes[i].second);
+        }
     }
 
     void PushTriangle(float* triangle){
-        std::vector<float>& verticesUsed = useTexture ? textureVertices.back() : vertices;
-        std::vector<unsigned int>& indicesUsed = useTexture ? textureIndices.back() : indices;
+        // Push a new triangle buffer into the list if its empty
+        if (triangleBuffers.empty()) 
+            cg::PushNewTriangleBuffer();
+
+        cg::TriangleBuffer& buffer = triangleBuffers.back();
+        std::vector<float>& verticesUsed = buffer.GetVertices();
+        std::vector<unsigned int>& indicesUsed = buffer.GetIndices();
+        auto& map = buffer.GetVerticesMap();
         int vertexSize = useTexture ? 8 : 6;
         for (int i = 0; i < 3; i++){
             float* vertex = &triangle[i * vertexSize];
-
-            int indice = verticesUsed.size() / vertexSize;
+            int verticesAmount = verticesUsed.size() / vertexSize;
 
             // Look if this vertex has already been added to the list of vertices
             int pos = 0;
             bool foundVertex = false;
-            for (int j = 0; j < verticesUsed.size() / vertexSize; j++){
+            int indice = verticesAmount;
+
+            // To balance performance and memory usage, only loop over the last 5 vertices since those are most likely to contain duplicates.
+            // This reduces the amount of vertices by about 60%. If I were to loop over all vertices, 
+            // memory usage would be reduced by about 70% in my tests, but performance would be bad.
+            int start = std::max(verticesAmount - 5, 0);
+            for (int j = start; j < verticesAmount; j++){
                 bool equal = true;
                 for (int k = 0; k < vertexSize; k++){
                     if (vertex[k] != verticesUsed[j * vertexSize + k]){
@@ -150,19 +187,21 @@ namespace cg {
         }
     }
 
-    void DrawTriangles(std::vector<float> verticesToDraw, std::vector<unsigned int> indicesToDraw, int texture){
-        if (texture == -1){
+    void DrawTriangles(cg::TriangleBuffer& buffer){
+        if (!buffer.IsTexture()){
             glBindVertexArray(VAO);
             glBindBuffer(GL_ARRAY_BUFFER, VBO);
-            glBufferData(GL_ARRAY_BUFFER, verticesToDraw.size() * sizeof(float), verticesToDraw.data(), GL_STATIC_DRAW);
+            glBufferData(GL_ARRAY_BUFFER, buffer.GetVertices().size() * sizeof(float), buffer.GetVertices().data(), usage);
 
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesToDraw.size() * sizeof(unsigned int), indicesToDraw.data(), GL_STATIC_DRAW);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, buffer.GetIndices().size() * sizeof(unsigned int), buffer.GetIndices().data(), usage);
 
             // Tell OpenGL how it should interpret vertex data
+            // Positions
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
             glEnableVertexAttribArray(0);
 
+            // Color
             glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3*sizeof(float)));
             glEnableVertexAttribArray(1);
 
@@ -172,14 +211,14 @@ namespace cg {
 
             // Draw the triangles
             glBindVertexArray(VAO);
-            glDrawElements(GL_TRIANGLES, indicesToDraw.size(), GL_UNSIGNED_INT, 0);
+            glDrawElements(GL_TRIANGLES, buffer.GetIndices().size(), GL_UNSIGNED_INT, 0);
         } else {
             glBindVertexArray(VAO);
             glBindBuffer(GL_ARRAY_BUFFER, VBO);
-            glBufferData(GL_ARRAY_BUFFER, verticesToDraw.size() * sizeof(float), verticesToDraw.data(), GL_STATIC_DRAW);
+            glBufferData(GL_ARRAY_BUFFER, buffer.GetVertices().size() * sizeof(float), buffer.GetVertices().data(), usage);
 
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesToDraw.size() * sizeof(unsigned int), indicesToDraw.data(), GL_STATIC_DRAW);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, buffer.GetIndices().size() * sizeof(unsigned int), buffer.GetIndices().data(), usage);
 
             // Tell OpenGL how it should interpret vertex data
             // Vertex
@@ -195,23 +234,21 @@ namespace cg {
             glEnableVertexAttribArray(2);
 
             // Use the texture shader program
-            shaderProgram.SetInt("renderType", (textures[texture]->IsGlyph() ? GLYPH_RENDERING : TEXTURE_RENDERING));
+            shaderProgram.SetInt("renderType", (buffer.GetTexture()->IsGlyph() ? GLYPH_RENDERING : TEXTURE_RENDERING));
             shaderProgram.Use();
 
             // Bind the texture and draw the triangles
-            glBindTexture(GL_TEXTURE_2D, textures[texture]->textureId);
+            glBindTexture(GL_TEXTURE_2D, buffer.GetTexture()->textureId);
             glBindVertexArray(VAO);
 
-            glDrawElements(GL_TRIANGLES, indicesToDraw.size(), GL_UNSIGNED_INT, 0);
+            glDrawElements(GL_TRIANGLES, buffer.GetIndices().size(), GL_UNSIGNED_INT, 0);
         }
     }
 
     void Draw(){
-        cg::DrawTriangles(vertices, indices);
-
-        // Draw textures
-        for (int i = 0; i < textures.size(); i++){
-            cg::DrawTriangles(textureVertices[i], textureIndices[i], i);
+        // Draw buffers
+        for (cg::TriangleBuffer& buffer : triangleBuffers){
+            cg::DrawTriangles(buffer);
         }
 
         glfwSwapBuffers(cg::GetWindow());
@@ -223,18 +260,6 @@ namespace cg {
         cg::StopUsingTexture();
     }
 
-    void Draw(cg::Texture& tex, cg::Vec2f size, int flags){
-        tex.SetSize(size);
-
-        cg::Draw(tex, flags);
-    }
-
-    void Draw(cg::Texture& tex, cg::Vec2i origin, int flags){
-        tex.SetOrigin(origin);
-
-        cg::Draw(tex, flags);
-    }
-
     void Draw(cg::Texture& tex, cg::Vec2f origin, cg::Vec2f size, int flags){
         tex.SetOrigin(origin);
         tex.SetSize(size);
@@ -242,15 +267,36 @@ namespace cg {
         cg::Draw(tex, flags);
     }
 
+    int GetVerticesAmount(){
+        int amount = 0;
+        for (auto& b : triangleBuffers){
+            amount += b.GetVertices().size();
+        }
+        return amount;
+    }
+    int GetIndicesAmount(){
+        int amount = 0;
+        for (auto& b : triangleBuffers){
+            amount += b.GetIndices().size();
+        }
+        return amount;
+    }
+    int GetTexturesAmount(){
+        int amount = 0;
+        for (auto& b : triangleBuffers){
+            amount += b.IsTexture();
+        }
+        return amount;
+    }
+
     void UseTexture(cg::Texture& tex){
         useTexture = true;
-        textures.push_back(&tex);
-        textureVertices.push_back({});
-        textureIndices.push_back({});
+        cg::PushNewTriangleBuffer(&tex);
     }
 
     void StopUsingTexture(){
         useTexture = false;
+        cg::PushNewTriangleBuffer();
     }
 
     bool IsUsingTexture() { 
@@ -258,23 +304,23 @@ namespace cg {
     }
 
     cg::Vec2f GetTextureOrigin() { 
-        return textures.back()->GetOriginNDC(); 
+        return triangleBuffers.back().GetTexture()->GetOriginNDC(); 
     }
 
     cg::Vec2f GetTextureSize() { 
-        return textures.back()->GetSizeNDC(); 
+        return triangleBuffers.back().GetTexture()->GetSizeNDC(); 
     }
 
     cg::Color GetTextureTint() { 
-        return textures.back()->GetTint(); 
+        return triangleBuffers.back().GetTexture()->GetTint(); 
     }
 
     cg::Vec2f GetTextureFlip() { 
-        return textures.back()->flip; 
+        return triangleBuffers.back().GetTexture()->flip; 
     }
 
     cg::Texture* GetCurrentTexture(){
-        return textures.back();
+        return triangleBuffers.back().GetTexture();
     }
 
     Texture::Texture(const char* path, int wrapping) {

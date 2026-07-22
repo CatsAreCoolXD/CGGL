@@ -6,7 +6,8 @@ int main(){
     settings.resizable = true;
     settings.antiAliasing = true;
     cg::Initialize("CGGL Window", cg::Vec2i(1920, 1080), settings);
-    cg::SetFPSLimit(180);
+    cg::SetFPSLimit(1000);
+    cg::ToggleVSync(false);
 
     cg::SetBackgroundColor(cg::Color(70, 83, 98));
 
@@ -21,6 +22,7 @@ int main(){
     tex2.SetOrigin(center, true);
 
     cg::Font font("src/fonts/OpenSans-Bold.ttf", 48);
+    cg::Font smallerFont("src/fonts/OpenSans-Bold.ttf", 16);
     cg::PushFont(font);
 
     float roundedSize = 15;
@@ -66,8 +68,14 @@ int main(){
         cg::UnfilledSquare(center + cg::Vec2f(600.f, -300.f), 150, 5, FLAG_CENTERED);
         cg::UnfilledRoundedSquare(center + cg::Vec2f(600.f, -100.f), 150, 5, roundedSize, FLAG_CENTERED);
 
-        //cg::Text("Example text", center + cg::Vec2f(300.f, 0.f));
+        cg::PushPrimaryColor(cg::Color(255,255,255));
         cg::Text("FPS: " + std::to_string((int)cg::GetAverageFPS()), cg::Vec2f(10.f, 1000.f));
+        cg::PushFont(smallerFont);
+        cg::Text("Vertices: " + std::to_string(cg::GetVerticesAmount()), cg::Vec2f(10.f, 975.f));
+        cg::Text("Indices: " + std::to_string(cg::GetIndicesAmount()), cg::Vec2f(10.f, 950.f));
+        cg::Text("Textures: " + std::to_string(cg::GetTexturesAmount()), cg::Vec2f(10.f, 925.f));
+        cg::PopFont();
+        cg::PopStyle();
 
         cg::Draw();
         cg::NewFrame();

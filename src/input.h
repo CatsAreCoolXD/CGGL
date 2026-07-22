@@ -160,6 +160,7 @@ namespace cg {
         // Returns true on the frame the key gets released.
         bool GetKeyUp(int key);
 
+        // Returns the input state of the key.
         int GetKeyState(int key);
 
         void UpdateInputStates();
@@ -176,6 +177,9 @@ namespace cg {
 
         // Returns true on the frame the button gets released.
         bool GetMouseButtonUp(int button);
+
+        // Returns the input state of the mouse button.
+        int GetMouseButtonState(int button);
 
         // Get the mouse/cursor position.
         cg::Vec2d GetMousePos();

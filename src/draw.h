@@ -1,6 +1,8 @@
 #ifndef DRAW_H
 #define DRAW_H
 
+#include <unordered_map>
+
 #include "types.h"
 
 #include <ft2build.h>
@@ -10,20 +12,49 @@
 #define TEXTURE_RENDERING 1
 #define GLYPH_RENDERING 2
 
+#define USAGE_DYNAMIC GL_DYNAMIC_DRAW
+#define USAGE_STATIC GL_STATIC_DRAW
+#define USAGE_STREAM GL_STREAM_DRAW
+
 namespace cg {
+    class Texture;
+    class TriangleBuffer {
+        public:
+            TriangleBuffer() {}
+            TriangleBuffer(bool isTexture, cg::Texture* tex = nullptr) : isTexture(isTexture), texture(tex) {}
+
+            std::vector<float>& GetVertices() { return vertices; }
+            std::unordered_map<size_t, std::vector<unsigned int>>& GetVerticesMap() { return verticesMap; }
+            std::vector<unsigned int>& GetIndices() { return indices; }
+
+            bool IsTexture() const { return isTexture; }
+            cg::Texture* GetTexture() const { return texture; }
+            void SetTexture(cg::Texture* tex) { texture = tex; isTexture = true; }
+        private:
+            std::vector<float> vertices;
+            std::unordered_map<size_t, std::vector<unsigned int>> verticesMap;
+            std::vector<unsigned int> indices;
+            bool isTexture = false;
+            cg::Texture* texture = nullptr;
+    };
+
+    size_t HashVertex(float* vertex, int size);
+
     void InitializeDrawing();
     void NewFrame();
 
     void Draw();
-    void DrawTriangles(std::vector<float> verticesToDraw, std::vector<unsigned int> indicesToDraw, int texture = -1);
+    void DrawTriangles(cg::TriangleBuffer& triangles);
 
     class Texture;
     void Draw(cg::Texture& tex, int flags = 0);
-    void Draw(cg::Texture& tex, cg::Vec2f size, int flags = 0);
-    void Draw(cg::Texture& tex, cg::Vec2i origin, int flags = 0);
     void Draw(cg::Texture& tex, cg::Vec2f origin, cg::Vec2f size, int flags = 0);
 
     void PushTriangle(float* triangle);
+
+    int GetVerticesAmount();
+    int GetIndicesAmount();
+    int GetTexturesAmount();
 
     double GetDeltatime();
     double GetAverageFPS();
@@ -40,6 +71,9 @@ namespace cg {
 
     // Set the rendering mode. Choose between WIREFRAME_MODE and FILL_MODE. FILL_MODE is default.
     void SetRenderingMode(int mode);
+
+    // Set the vertex usage mode. Default is USAGE_DYNAMIC.
+    void SetUsageMode(int newUsage);
 
     class Texture {
         public:

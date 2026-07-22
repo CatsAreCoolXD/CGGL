@@ -65,7 +65,7 @@ namespace cg {
 
         bool GetMouseButtonUp(int button) { return buttonStates[button] == INPUTSTATE_RELEASED; }
 
-        int GetButtonState(int button) { return buttonStates[button]; }
+        int GetMouseButtonState(int button) { return buttonStates[button]; }
 
         cg::Vec2d GetMousePos(){
             double x, y;
