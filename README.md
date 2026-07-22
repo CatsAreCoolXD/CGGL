@@ -4,7 +4,7 @@ Welcome to my passion project, CGGL!
 
 ## SIQ (Super Important Questions)
 
-#### What's this
+#### What's this?
 
 CGGL is an all-purpose C++ library, which currently has the following features:
 - Math (Vectors)
