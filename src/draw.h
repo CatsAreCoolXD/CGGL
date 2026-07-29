@@ -69,6 +69,8 @@ namespace cg {
     void SetFPSLimit(unsigned int fpsLimit);
     void SetBackgroundColor(cg::Color newColor);
 
+    cg::Color GetBackgroundColor();
+
     // Set the rendering mode. Choose between WIREFRAME_MODE and FILL_MODE. FILL_MODE is default.
     void SetRenderingMode(int mode);
 

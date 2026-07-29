@@ -18,11 +18,11 @@ namespace cg {
         }
     }
 
-    Font::Font(const char* path, int fontSize){
-        Font::LoadFont(path, fontSize);
+    Font::Font(const char* path, int fontSize) : fontSize(fontSize) {
+        Font::LoadFont(path);
     }
 
-    void Font::LoadFont(const char* path, int fontSize){
+    void Font::LoadFont(const char* path){
         if (FT_New_Face(freeType, path, 0, &face)){
             std::string msg = "Failed to load font with path " + (std::string)path + ". Ensure path is correct.";
             throw std::runtime_error(msg);
@@ -68,14 +68,15 @@ namespace cg {
         return fontStack.top();
     }
 
-    void Text(std::string text, cg::Vec2f pos){
+    void Text(std::string text, cg::Vec2f pos, unsigned int flag){
+        if (flag & FLAG_CENTERED) pos = pos - cg::MeasureText(text) / 2.f;
         cg::Font* font = fontStack.top();
 
         int i = 0;
         for (char& c : text){
-            FontCharacter& fontCharacter = font->characterMap[c];
+            cg::FontCharacter& fontCharacter = font->characterMap[c];
             cg::Texture& tex = fontCharacter.tex;
-            tex.SetTint(cg::GetCurrentStyle().primaryColor);
+            tex.SetTint(flag & FLAG_USE_SECONDARY_COLOR ? cg::GetCurrentStyle().secondaryColor : cg::GetCurrentStyle().primaryColor);
             int x = pos.x + fontCharacter.bearing.x;
             int y = pos.y - (fontCharacter.size.y - fontCharacter.bearing.y);
             tex.SetOrigin(cg::Vec2f(x, y));
@@ -83,6 +84,18 @@ namespace cg {
 
            pos.x += fontCharacter.advance >> 6; // Bitshift by 6 to divide by 64, since advance is in 1/64 pixels
         }
+    }
+
+    cg::Vec2f MeasureText(std::string text){
+        cg::Font* font = fontStack.top();
+
+        cg::Vec2f size;
+        for (char& c : text){
+            cg::FontCharacter& fontCharacter = font->characterMap[c];
+            size.x += fontCharacter.size.x + ((fontCharacter.advance >> 6) - fontCharacter.size.x);
+            size.y = std::max(size.y, (float)fontCharacter.size.y);
+        }
+        return size;
     }
 
     void ShutdownFreetype(){

@@ -25,13 +25,17 @@ namespace cg
             Font() {}
             Font(const char* path, int fontSize);
 
-            void LoadFont(const char* path, int fontSize);
+            int GetFontSize() const { return fontSize; }
+
+            void LoadFont(const char* path);
             std::map<char, FontCharacter> characterMap;
         private:
+            int fontSize;
             FT_Face face;
     };
 
-    void Text(std::string text, cg::Vec2f pos);
+    void Text(std::string text, cg::Vec2f pos, unsigned int flag = 0u);
+    cg::Vec2f MeasureText(std::string text);
 
     void PushFont(cg::Font& font);
     cg::Font* PopFont();

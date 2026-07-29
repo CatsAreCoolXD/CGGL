@@ -60,8 +60,13 @@ namespace cg {
         if (settings.antiAliasing)
             glEnable(GL_MULTISAMPLE);
 
-        glViewport(0, 0, size.x, size.y);
+        int left, top, right, bottom;
+        glfwGetWindowFrameSize(window, &left, &top, &right, &bottom);
+
+        glViewport(0, 0, size.x, size.y - top + left);
         glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+
+        glfwSetWindowSize(window, size.x, size.y);
 
         glfwSetScrollCallback(window, mouse_scroll_callback);
 

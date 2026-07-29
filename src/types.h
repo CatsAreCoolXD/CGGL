@@ -65,32 +65,32 @@ namespace cg {
     };
 
     template<typename T>
-    Vec2<T> operator+(Vec2<T>& l, Vec2<T>& r) {
+    Vec2<T> operator+(Vec2<T> l, Vec2<T> r) {
         return Vec2<T>(l.x + r.x, l.y + r.y);
     }
 
     template<typename T>
-    Vec2<T> operator-(Vec2<T>& l, Vec2<T>& r) {
+    Vec2<T> operator-(Vec2<T> l, Vec2<T> r) {
         return Vec2<T>(l.x - r.x, l.y - r.y);
     }
 
     template<typename T>
-    Vec2<T> operator/(Vec2<T>& l, float r) {
+    Vec2<T> operator/(Vec2<T> l, float r) {
         return Vec2<T>(l.x / r, l.y / r);
     }
 
     template<typename T>
-    Vec2<T> operator*(Vec2<T>& l, float r) {
+    Vec2<T> operator*(Vec2<T> l, float r) {
         return Vec2<T>(l.x * r, l.y * r);
     }
 
     template<typename T>
-    Vec2<T> operator/(Vec2<T>& l, Vec2<T>& r) {
+    Vec2<T> operator/(Vec2<T> l, Vec2<T>&r) {
         return Vec2<T>(l.x / r.x, l.y / r.y);
     }
 
     template<typename T>
-    Vec2<T> operator*(Vec2<T&> l, Vec2<T>& r) {
+    Vec2<T> operator*(Vec2<T> l, Vec2<T> r) {
         return Vec2<T>(l.x * r.x, l.y * r.y);
     }
 
@@ -156,42 +156,42 @@ namespace cg {
     };
 
     template<typename T>
-    Vec3<T> operator+(Vec3<T>& l, Vec3<T>& r) {
+    Vec3<T> operator+(Vec3<T> l, Vec3<T> r) {
         return Vec3<T>(l.x + r.x, l.y + r.y, l.z + r.z);
     }
 
     template<typename T>
-    Vec3<T> operator-(Vec3<T>& l, Vec3<T>& r) {
+    Vec3<T> operator-(Vec3<T>&l, Vec3<T> r) {
         return Vec3<T>(l.x - r.x, l.y - r.y, l.z - r.z);
     }
 
     template<typename T>
-    Vec3<T> operator+(Vec3<T>& l, Vec2<T>& r) {
+    Vec3<T> operator+(Vec3<T> l, Vec2<T> r) {
         return Vec3<T>(l.x + r.x, l.y + r.y, l.z);
     }
 
     template<typename T>
-    Vec3<T> operator-(Vec3<T>& l, Vec2<T>& r) {
+    Vec3<T> operator-(Vec3<T> l, Vec2<T> r) {
         return Vec3<T>(l.x - r.x, l.y - r.y, l.z);
     }
 
     template<typename T>
-    Vec3<T> operator/(Vec3<T>& l, float r) {
+    Vec3<T> operator/(Vec3<T> l, float r) {
         return Vec3<T>(l.x / r, l.y / r, l.z / r);
     }
 
     template<typename T>
-    Vec3<T> operator*(Vec3<T&> l, float r) {
+    Vec3<T> operator*(Vec3<T> l, float r) {
         return Vec3<T>(l.x * r, l.y * r, l.z / r);
     }
 
     template<typename T>
-    Vec3<T> operator/(Vec3<T>& l, Vec3<T>& r) {
+    Vec3<T> operator/(Vec3<T> l, Vec3<T> r) {
         return Vec3<T>(l.x / r.x, l.y / r.y, l.z / r.z);
     }
 
     template<typename T>
-    Vec3<T> operator*(Vec3<T&> l, Vec3<T>& r) {
+    Vec3<T> operator*(Vec3<T> l, Vec3<T> r) {
         return Vec3<T>(l.x * r.x, l.y * r.y, l.z / r.z);
     }
 
@@ -219,6 +219,9 @@ namespace cg {
             }
     };
 
+    cg::Color operator*(cg::Color l, cg::Color r);
+    cg::Color operator*(cg::Color l, float r);
+
     class Vertex {
         public:
             Vertex() : pos(cg::Vec3f()), color(cg::Color()) {}
@@ -228,9 +231,10 @@ namespace cg {
             cg::Color color;
             cg::Vec2f texCoords;
 
+            // Make sure to delete data after use
             float* GetData(int size) const {
                 if (size == 6){
-                    float* vertex = new float[6];
+                    float* vertex = new float[7];
                     vertex[0] = pos.x;
                     vertex[1] = pos.y;
                     vertex[2] = pos.z;
@@ -240,7 +244,7 @@ namespace cg {
                     vertex[5] = color.b;
                     return vertex;
                 }
-                float* vertex = new float[8];
+                float* vertex = new float[9];
                 vertex[0] = pos.x;
                 vertex[1] = pos.y;
                 vertex[2] = pos.z;
@@ -271,6 +275,7 @@ namespace cg {
             Shader() {}
             Shader(const char* vertexPath, const char* fragmentPath);
 
+            void CreateFromStrings(std::string vertexString, std::string fragmentString);
             void Create(const char* vertexPath, const char* fragmentPath);
             void Use();
             void SetBool(const std::string& name, bool value) const;
@@ -283,6 +288,7 @@ namespace cg {
             unsigned int id;
         private:
             void CompileShader(const char* path, unsigned int& shaderId, int shaderType);
+            void CompileShaderFromString(std::string code, unsigned int& shaderId, int shaderType);
             bool created = false;
     };
 

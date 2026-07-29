@@ -18,7 +18,7 @@ namespace cg {
     void PushBorder(bool border);
     void PushBorderThickness(int thickness);
 
-    Style GetStyle(cg::Color primaryColor = cg::Color(149, 147, 217), cg::Color secondaryColor = cg::Color(239, 246, 238), int quality = 16, bool border = true, int borderThickness = 2);
+    Style GetStyle(cg::Color primaryColor = cg::Color(25, 43, 194), cg::Color secondaryColor = cg::Color(253,240,213), int quality = 16, bool border = true, int borderThickness = 2);
 
     void PushStyle(Style style);
     Style PopStyle();

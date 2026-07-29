@@ -13,6 +13,57 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+/* 
+VERTEX SHADER
+This shader sets all the needed variables that the fragment shader uses. 
+*/
+const std::string VERTEX_SHADER_SOURCE = 
+"#version 330 core\n"
+"layout (location = 0) in vec3 pos;"
+"layout (location = 1) in vec4 vertColor;"
+"layout (location = 2) in vec2 texCoords;"
+""
+"out vec4 color;"
+"out vec2 texCoord;"
+""
+"void main()"
+"{"
+"    gl_Position = vec4(pos, 1.0);"
+"    color = vertColor;"
+"    texCoord = texCoords;"
+"}";
+
+/* 
+FRAGMENT SHADER
+This shader draws the triangles based on the active rendering mode, which can either be:
+(0) normal triangles,
+(1) Textures
+(2) Glyphs
+*/
+const std::string FRAGMENT_SHADER_SOURCE =
+"#version 330 core\n"
+"out vec4 FragColor;"
+"in vec4 color;"
+"in vec2 texCoord;"
+"uniform sampler2D tex;"
+""
+"uniform int renderType;"
+""
+"void main()"
+"{"
+"    if (renderType == 0){"
+"        FragColor = color;"
+"    }"
+"    else if (renderType == 1){"
+"        vec4 texCol = texture(tex, texCoord);"
+"        FragColor = color * texCol;"
+"    }"
+"    else if (renderType == 2){"
+"        float alpha = texture(tex, texCoord).r;"
+"        FragColor = vec4(color.rgb, color.a * alpha);"
+"    }"
+"}";
+
 namespace cg {
     namespace {
         std::vector<cg::TriangleBuffer> triangleBuffers;
@@ -36,7 +87,7 @@ namespace cg {
 
     void InitializeDrawing(){
         // Create the shader program
-        shaderProgram.Create("src/vert.glsl", "src/frag.glsl");
+        shaderProgram.CreateFromStrings(VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE);
         
         glGenVertexArrays(1, &VAO);
         glGenBuffers(1, &VBO);
@@ -69,6 +120,10 @@ namespace cg {
 
     void SetBackgroundColor(cg::Color newColor) {
         backgroundColor = newColor;
+    }
+
+    cg::Color GetBackgroundColor() {
+        return backgroundColor;
     }
 
     void SetRenderingMode(int mode){
@@ -152,7 +207,7 @@ namespace cg {
         std::vector<float>& verticesUsed = buffer.GetVertices();
         std::vector<unsigned int>& indicesUsed = buffer.GetIndices();
         auto& map = buffer.GetVerticesMap();
-        int vertexSize = useTexture ? 8 : 6;
+        int vertexSize = useTexture ? 9 : 7;
         for (int i = 0; i < 3; i++){
             float* vertex = &triangle[i * vertexSize];
             int verticesAmount = verticesUsed.size() / vertexSize;
@@ -198,11 +253,11 @@ namespace cg {
 
             // Tell OpenGL how it should interpret vertex data
             // Positions
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)0);
             glEnableVertexAttribArray(0);
 
             // Color
-            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3*sizeof(float)));
+            glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)(3*sizeof(float)));
             glEnableVertexAttribArray(1);
 
             // Use the shader program
@@ -222,15 +277,15 @@ namespace cg {
 
             // Tell OpenGL how it should interpret vertex data
             // Vertex
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)0);
             glEnableVertexAttribArray(0);
 
             // Color
-            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+            glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(3 * sizeof(float)));
             glEnableVertexAttribArray(1);
 
             // Texture coordinates
-            glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+            glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(7 * sizeof(float)));
             glEnableVertexAttribArray(2);
 
             // Use the texture shader program

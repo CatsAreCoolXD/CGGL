@@ -1,9 +1,9 @@
 #version 330 core
 layout (location = 0) in vec3 pos;
-layout (location = 1) in vec3 vertColor;
+layout (location = 1) in vec4 vertColor;
 layout (location = 2) in vec2 texCoords;
 
-out vec3 color;
+out vec4 color;
 out vec2 texCoord;
 
 void main()

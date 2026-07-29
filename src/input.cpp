@@ -1,5 +1,7 @@
 #include "input.h"
 
+#include <iostream>
+
 namespace cg {
     namespace Input {
         namespace {
@@ -69,10 +71,10 @@ namespace cg {
 
         cg::Vec2d GetMousePos(){
             double x, y;
-            int h;
+            int h, frameHeight;
             GLFWwindow* window = cg::GetWindow();
             glfwGetCursorPos(window, &x, &y);
-            glfwGetWindowSize(window, NULL, &h);
+            glfwGetFramebufferSize(window, NULL, &h);
             return cg::Vec2d(x, h - y);
         }
 

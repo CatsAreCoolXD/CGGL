@@ -74,10 +74,10 @@ namespace cg {
         cg::Rectangle(origin + cg::Vec2f(0.f, roundedSize), cg::Vec2f(roundedSize, size.y - roundedSize * 2.f), flags | FLAG_NO_BORDER);
         cg::Rectangle(origin + cg::Vec2f(size.x - roundedSize, 0.f) + cg::Vec2f(0.f, roundedSize), cg::Vec2f(roundedSize, size.y - roundedSize * 2.f), flags | FLAG_NO_BORDER);
 
-        cg::SemiCircle(origin + cg::Vec2f(roundedSize, roundedSize), roundedSize, BOTTOM_LEFT, flags);
-        cg::SemiCircle(origin + cg::Vec2f(roundedSize, size.y - roundedSize), roundedSize, TOP_LEFT, flags);
-        cg::SemiCircle(origin + cg::Vec2f(size.x - roundedSize, roundedSize), roundedSize, BOTTOM_RIGHT, flags);
-        cg::SemiCircle(origin + cg::Vec2f(size.x - roundedSize, size.y - roundedSize), roundedSize, TOP_RIGHT, flags);
+        cg::SemiCircle(origin + cg::Vec2f(size.x - roundedSize, size.y - roundedSize), roundedSize, TOP_RIGHT, flags | FLAG_NO_BORDER);
+        cg::SemiCircle(origin + cg::Vec2f(roundedSize, size.y - roundedSize), roundedSize, TOP_LEFT, flags | FLAG_NO_BORDER);
+        cg::SemiCircle(origin + cg::Vec2f(size.x - roundedSize, roundedSize), roundedSize, BOTTOM_RIGHT, flags | FLAG_NO_BORDER);
+        cg::SemiCircle(origin + cg::Vec2f(roundedSize, roundedSize), roundedSize, BOTTOM_LEFT, flags | FLAG_NO_BORDER);
 
         cg::Vertex firstTriangle[3] = {
             bottomLeft, topLeft, topRight
@@ -136,10 +136,10 @@ namespace cg {
         cg::Rectangle(bottomLeft, topLeft - bottomLeft, flags | FLAG_NO_BORDER);
         cg::Rectangle(bottomRight, topRight - bottomRight, flags | FLAG_NO_BORDER);
 
-        cg::UnfilledSemiCircle(origin + cg::Vec2f(roundedSize, roundedSize), roundedSize, thickness, BOTTOM_LEFT, flags);
-        cg::UnfilledSemiCircle(origin + cg::Vec2f(roundedSize, size.y - roundedSize), roundedSize, thickness, TOP_LEFT, flags);
-        cg::UnfilledSemiCircle(origin + cg::Vec2f(size.x - roundedSize, roundedSize), roundedSize, thickness, BOTTOM_RIGHT, flags);
-        cg::UnfilledSemiCircle(origin + cg::Vec2f(size.x - roundedSize, size.y - roundedSize), roundedSize, thickness, TOP_RIGHT, flags);
+        cg::UnfilledSemiCircle(origin + cg::Vec2f(roundedSize, roundedSize), roundedSize, BOTTOM_LEFT, thickness, flags);
+        cg::UnfilledSemiCircle(origin + cg::Vec2f(roundedSize, size.y - roundedSize), roundedSize, TOP_LEFT, thickness, flags);
+        cg::UnfilledSemiCircle(origin + cg::Vec2f(size.x - roundedSize, roundedSize), roundedSize, BOTTOM_RIGHT, thickness, flags);
+        cg::UnfilledSemiCircle(origin + cg::Vec2f(size.x - roundedSize, size.y - roundedSize), roundedSize, TOP_RIGHT, thickness, flags);
     }
 
     void Circle(cg::Vec2f pos, int radius, unsigned int flags){
@@ -183,10 +183,10 @@ namespace cg {
         }
 
         if (style.border && !(flags & FLAG_NO_BORDER))
-            cg::UnfilledSemiCircle(center, radius, style.borderThickness, direction, flags | FLAG_USE_SECONDARY_COLOR);
+            cg::UnfilledSemiCircle(center, radius, direction, style.borderThickness, flags | FLAG_USE_SECONDARY_COLOR);
     }
 
-    void UnfilledSemiCircle(cg::Vec2f center, int radius, int thickness, int direction, unsigned int flags){
+    void UnfilledSemiCircle(cg::Vec2f center, int radius, int direction, int thickness, unsigned int flags){
         if (radius == 0) return;
         const cg::Style style = cg::GetCurrentStyle();
         const cg::Color color = flags & FLAG_USE_SECONDARY_COLOR ? style.secondaryColor : style.primaryColor;
@@ -232,6 +232,7 @@ namespace cg {
             vertices3D[i].color.r = (float)vertices[i].color.r / 255.f;
             vertices3D[i].color.g = (float)vertices[i].color.g / 255.f;
             vertices3D[i].color.b = (float)vertices[i].color.b / 255.f;
+            vertices3D[i].color.a = (float)vertices[i].color.a / 255.f;
         }
         
         cg::Triangle3D(vertices3D);
@@ -240,15 +241,16 @@ namespace cg {
     void Triangle3D(cg::Vertex* vertices){
         // Convert vectors to an array
         if (!cg::IsUsingTexture()){
-            float triangle[18];
+            float triangle[21];
             for (int i = 0; i < 3; i++){
-                triangle[i * 6 + 0] = cg::clamp11(vertices[i].pos.x);
-                triangle[i * 6 + 1] = cg::clamp11(vertices[i].pos.y);
-                triangle[i * 6 + 2] = cg::clamp11(vertices[i].pos.z);
+                triangle[i * 7 + 0] = cg::clamp11(vertices[i].pos.x);
+                triangle[i * 7 + 1] = cg::clamp11(vertices[i].pos.y);
+                triangle[i * 7 + 2] = cg::clamp11(vertices[i].pos.z);
 
-                triangle[i * 6 + 3] = cg::clamp01(vertices[i].color.r);
-                triangle[i * 6 + 4] = cg::clamp01(vertices[i].color.g);
-                triangle[i * 6 + 5] = cg::clamp01(vertices[i].color.b);
+                triangle[i * 7 + 3] = cg::clamp01(vertices[i].color.r);
+                triangle[i * 7 + 4] = cg::clamp01(vertices[i].color.g);
+                triangle[i * 7 + 5] = cg::clamp01(vertices[i].color.b);
+                triangle[i * 7 + 6] = cg::clamp01(vertices[i].color.a);
             }
             cg::PushTriangle(triangle);
         } else {
@@ -257,20 +259,21 @@ namespace cg {
             cg::Color tint = cg::GetTextureTint();
             cg::Vec2f flip = cg::GetTextureFlip();
             bool renderingGlyph = cg::IsUsingTexture() && cg::GetCurrentTexture()->IsGlyph();
-            float triangle[24];
+            float triangle[27];
             for (int i = 0; i < 3; i++){
-                triangle[i * 8 + 0] = cg::clamp11(vertices[i].pos.x);
-                triangle[i * 8 + 1] = cg::clamp11(vertices[i].pos.y);
-                triangle[i * 8 + 2] = cg::clamp11(vertices[i].pos.z);
+                triangle[i * 9 + 0] = cg::clamp11(vertices[i].pos.x);
+                triangle[i * 9 + 1] = cg::clamp11(vertices[i].pos.y);
+                triangle[i * 9 + 2] = cg::clamp11(vertices[i].pos.z);
 
-                triangle[i * 8 + 3] = cg::clamp01(tint.r / 255.f);
-                triangle[i * 8 + 4] = cg::clamp01(tint.g / 255.f);
-                triangle[i * 8 + 5] = cg::clamp01(tint.b / 255.f);
+                triangle[i * 9 + 3] = cg::clamp01(tint.r / 255.f);
+                triangle[i * 9 + 4] = cg::clamp01(tint.g / 255.f);
+                triangle[i * 9 + 5] = cg::clamp01(tint.b / 255.f);
+                triangle[i * 9 + 6] = cg::clamp01(tint.a / 255.f);
 
-                triangle[i * 8 + 6] = (triangle[i * 8 + 0] - texOrigin.x) / texSize.x;
-                triangle[i * 8 + 7] = flip.y - (triangle[i * 8 + 1] - texOrigin.y) / texSize.y;
-                if (renderingGlyph && triangle[i * 8 + 6] < 0.01f) triangle[i * 8 + 6] = 0.0f;
-                if (renderingGlyph && triangle[i * 8 + 7] < 0.01f) triangle[i * 8 + 7] = 0.0f;
+                triangle[i * 9 + 7] = (triangle[i * 9 + 0] - texOrigin.x) / texSize.x;
+                triangle[i * 9 + 8] = flip.y - (triangle[i * 9 + 1] - texOrigin.y) / texSize.y;
+                if (renderingGlyph && triangle[i * 9 + 7] < 0.01f) triangle[i * 9 + 7] = 0.0f;
+                if (renderingGlyph && triangle[i * 9 + 8] < 0.01f) triangle[i * 9 + 8] = 0.0f;
             }
             cg::PushTriangle(triangle);
         }

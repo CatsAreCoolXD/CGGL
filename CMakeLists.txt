@@ -13,7 +13,7 @@ add_executable(main)
 
 target_sources(main
     PRIVATE
-        src/example.cpp src/window.cpp src/style.cpp src/shape.cpp src/types.cpp src/draw.cpp src/input.cpp src/text.cpp
+        src/example.cpp src/window.cpp src/style.cpp src/shape.cpp src/types.cpp src/draw.cpp src/input.cpp src/text.cpp src/gui.cpp
 )
 
 target_link_libraries(main PRIVATE glfw glad freetype)
