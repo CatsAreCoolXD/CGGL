@@ -6,13 +6,14 @@ Welcome to my passion project, CGGL!
 
 #### What's this?
 
-CGGL is an all-purpose C++ library, which currently has the following features:
+CGGL is an all-purpose C++ library, which currently has the following core features:
 - Math (Vectors)
 - Graphics
 - Basic shape drawing
 - Textures
 - Text
 - Input
+- GUI
 
 #### What does CGGL stand for?
 
