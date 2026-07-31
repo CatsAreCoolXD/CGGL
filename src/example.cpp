@@ -8,7 +8,7 @@ int main(){
     settings.resizable = true;
     settings.antiAliasing = true;
     cg::Initialize("CGGL Window", cg::Vec2i(1920, 1080), settings);
-    cg::SetFPSLimit(60);
+    cg::SetFPSLimit(180);
     cg::ToggleVSync(false);
 
     cg::Raytracing::InitRaytracing();
@@ -46,16 +46,16 @@ int main(){
 
     cg::Scene scene;
 
-    scene.CreateSphere(cg::Vec3f(-5.f, -2.f, 10.f), 1.f, scene.CreateMaterial(cg::Color(0.f, 1.f, 0.f))); // Green Sphere
-    scene.CreateSphere(cg::Vec3f(-2.0f, -1.5f, 10.f), 1.5f, scene.CreateMaterial(cg::Color(1.f, 1.f, 0.f))); // Yellow Sphere
-    scene.CreateSphere(cg::Vec3f(1.5f, -1.5f, 10.f), 2.f, scene.CreateMaterial(cg::Color(1.f, 0.f, 0.f))); // Red Sphere
-    scene.CreateSphere(cg::Vec3f(7.f, -3.f, 10.f), 3.f, scene.CreateMaterial(cg::Color(1.f, 1.f, 1.f), cg::Color(0.f, 0.f, 0.f, 0.f), smoothness)); // White Sphere
+    //scene.CreateSphere(cg::Vec3f(-5.f, -2.f, 10.f), 1.f, scene.CreateMaterial(cg::Color(0.f, 1.f, 0.f))); // Green Sphere
+    //scene.CreateSphere(cg::Vec3f(-2.0f, -1.5f, 10.f), 1.5f, scene.CreateMaterial(cg::Color(1.f, 1.f, 0.f))); // Yellow Sphere
+    //scene.CreateSphere(cg::Vec3f(1.5f, -1.5f, 10.f), 2.f, scene.CreateMaterial(cg::Color(1.f, 0.f, 0.f))); // Red Sphere
+    //scene.CreateSphere(cg::Vec3f(7.f, -3.f, 10.f), 3.f, scene.CreateMaterial(cg::Color(1.f, 1.f, 1.f), cg::Color(0.f, 0.f, 0.f, 0.f), smoothness)); // White Sphere
 
-    scene.CreateSphere(cg::Vec3f(0.f, -101.0f, 0.f), 100.f, scene.CreateMaterial(cg::Color(0.f, 1.f, 1.f))); // Cyan, big Sphere
+    //scene.CreateSphere(cg::Vec3f(0.f, -101.0f, 0.f), 100.f, scene.CreateMaterial(cg::Color(0.f, 1.f, 1.f))); // Cyan, big Sphere
 
-    scene.CreateSphere(cg::Vec3f(-10.f, 10.f, -25.f), 10.f, scene.CreateMaterial(cg::Color(), cg::Color(1.f, 1.f, 1.f, 5.f))); // Sun
+    scene.CreateSphere(cg::Vec3f(35.f, 30.f, 0.f), 10.f, scene.CreateMaterial(cg::Color(), cg::Color(1.f, 1.f, 1.f, 15.f))); // Sun
 
-    scene.LoadPly("src/models/monkey.ply");
+    scene.LoadPly("src/models/tree2.ply");
 
     while (cg::WindowIsOpen()){
         if (cg::IsKeyUp(KEY_SPACE)) {
@@ -80,6 +80,7 @@ int main(){
         cg::GUISlider("Max Bounces", maxBounces, 0, 100);
         cg::GUISlider("Blur Strength", blurStrength, 0.f, 100.f);
         if (cg::GUIButton("Reset Accumulation")) cg::Raytracing::QueueClear();
+        if (cg::GUIButton("Export Image")) cg::Raytracing::ExportImage("image.png");
         cg::GUIText("Press SPACE to stop raytracing", FLAG_USE_SECONDARY_COLOR);
 
         cg::GUIEndSection();

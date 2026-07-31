@@ -277,6 +277,7 @@ void TestSpheres(in Ray ray, inout IntersectInfo result){
 }
 
 vec3 GetSkyColor(vec3 rd){
+    return vec3(0.);
     float a = 0.5*(rd.y + 1.0);
     return (1.0-a)*vec3(1.0, 1.0, 1.0) + a*vec3(0.5, 0.7, 1.0);
 }
@@ -290,16 +291,17 @@ vec3 RayTrace(in Ray ray, inout uint seed){
         TestSpheres(ray, resultSpheres);
         TestMeshes(ray, resultMeshes);
 
-        IntersectInfo result = resultSpheres.dst < resultMeshes.dst ? resultSpheres : resultMeshes;
+        IntersectInfo result = (resultSpheres.dst < resultMeshes.dst && resultSpheres.hit) ? resultSpheres : resultMeshes;
         if (result.hit){
             vec3 emittedLight = materials[result.materialIndex].emissionColor.rgb * materials[result.materialIndex].emissionColor.a;
             incomingLight += color * emittedLight;
             color *= materials[result.materialIndex].color;
 
-            ray.origin = result.intersectPos + result.normal * 0.001;
-            
-            vec3 randomDirection = normalize(result.normal + RandomPointInsideSphere(seed));
+            if (dot(result.normal, ray.direction) > 0) result.normal *= -1.0; // Normal must be wrong, so correct it
 
+            ray.origin = result.intersectPos + result.normal * 0.001;
+
+            vec3 randomDirection = normalize(result.normal + RandomPointInsideSphere(seed));
             ray.direction = mix(randomDirection, reflect(ray.direction, result.normal), materials[result.materialIndex].smoothness);
         } else {
             if (bounce == 0) incomingLight = GetSkyColor(ray.direction);

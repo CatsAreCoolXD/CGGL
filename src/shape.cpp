@@ -342,7 +342,7 @@ namespace cg {
     }
 
     void Scene::LoadPly(std::string path){
-        happly::PLYData plyIn(path);
+        happly::PLYData plyIn(path, true);
 
         std::vector<std::array<double, 3>> meshVertexPositions = plyIn.getVertexPositions();
         std::vector<std::array<unsigned char, 3>> meshVertexColors = plyIn.getVertexColors();
@@ -400,10 +400,6 @@ namespace cg {
         std::cout << "Loaded Triangles" << std::endl;
 
         Box boundingBox;
-        cg::Vec3f boxPos;
-        boundingBox.pos[0] = boxPos.x;
-        boundingBox.pos[1] = boxPos.y;
-        boundingBox.pos[2] = boxPos.z;
         
         cg::Vec3f min = vertices[0].pos;
         cg::Vec3f max = vertices[0].pos;
@@ -417,10 +413,15 @@ namespace cg {
             if (v.pos.z > max.z) max.z = v.pos.z;
         }
 
-        cg::Vec3f boxSize = cg::Vec3f(max.x - min.x, max.y - min.y, max.z - min.z) / 2.f;
+        cg::Vec3f boxSize = cg::Vec3f(max - min) / 2.f;
         boundingBox.size[0] = boxSize.x;
         boundingBox.size[1] = boxSize.y;
         boundingBox.size[2] = boxSize.z;
+
+        cg::Vec3f boxPos = cg::Vec3f(min + max) / 2.f;
+        boundingBox.pos[0] = boxPos.x;
+        boundingBox.pos[1] = boxPos.y;
+        boundingBox.pos[2] = boxPos.z;
 
         boxes.push_back(boundingBox);
 

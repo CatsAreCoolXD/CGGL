@@ -12,6 +12,9 @@
 
 #include <glad/glad.h>
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "../include/stb_image_write.h"
+
 // Todo: Make Ray Tracing work with window resizing
 
 namespace cg {
@@ -30,7 +33,7 @@ namespace cg {
             float blurStrength = 0.f;
             int frame = 0;
 
-            cg::Vec3d cameraPos(5,0,-5), cameraLookAt(0,0,0);
+            cg::Vec3d cameraPos(30,15,0), cameraLookAt(0,0,0);
             double flySpeed = 1.0;
 
             bool enableFreeCam = true, clearQueued = false, framebufferResizeQueued = false;
@@ -304,6 +307,19 @@ namespace cg {
             glBindTexture(GL_TEXTURE_2D, 0);
 
             frame++;
+        }
+
+        void ExportImage(std::string name){
+            cg::Vec2i imageSize = cg::GetWindowSize();
+            std::vector<unsigned char> pixels(imageSize.x * imageSize.y * 4);
+
+            int write = frame % 2;
+            int read = !read;
+
+            glBindFramebuffer(GL_FRAMEBUFFER, frameBuffers[read]);
+            glReadPixels(0, 0, imageSize.x, imageSize.y, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
+
+            stbi_write_png(name.c_str(), imageSize.x, imageSize.y, 4, pixels.data(), imageSize.x * 4);
         }
     }
 }
