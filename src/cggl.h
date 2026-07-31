@@ -16,3 +16,7 @@
 #ifdef CGGL_INCLUDE_GAME_UTILITIES
 #include "gameutilities.h"
 #endif
+
+#ifdef CGGL_INCLUDE_RAYTRACING
+#include "raytracing/raytracing.h"
+#endif

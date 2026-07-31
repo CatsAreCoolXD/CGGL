@@ -1,6 +1,7 @@
 #ifndef DG_MATH_H
 #define DG_MATH_H
 
+#include <iostream>
 #include <algorithm>
 #include <string>
 #include <cmath>
@@ -33,7 +34,7 @@ namespace cg {
                 return (*this) / Vec2::Length();
             }
 
-            float Dot(Vec2& other){
+            float Dot(Vec2 other){
                 return x * other.x + y * other.y;
             }
 
@@ -75,6 +76,11 @@ namespace cg {
     }
 
     template<typename T>
+    Vec2<T> operator-(Vec2<T> l, float r) {
+        return Vec2<T>(l.x - r, l.y - r);
+    }
+
+    template<typename T>
     Vec2<T> operator/(Vec2<T> l, float r) {
         return Vec2<T>(l.x / r, l.y / r);
     }
@@ -85,7 +91,7 @@ namespace cg {
     }
 
     template<typename T>
-    Vec2<T> operator/(Vec2<T> l, Vec2<T>&r) {
+    Vec2<T> operator/(Vec2<T> l, Vec2<T>r) {
         return Vec2<T>(l.x / r.x, l.y / r.y);
     }
 
@@ -125,12 +131,12 @@ namespace cg {
             }
 
             template<typename U>
-            float Dot(Vec3<U>& other){
+            float Dot(Vec3<U> other){
                 return x * (T)other.x + y * (T)other.y + z * (T)other.z;
             }
 
             template<typename U>
-            Vec3<T> Cross(Vec3<U>& other){
+            Vec3<T> Cross(Vec3<U> other){
                 return Vec3<T>(y * (T)other.z - b * (T)other.y, z * (T)other.x - x * (T)other.z, x * (T)other.y - y * (T)other.x);
             }
 
@@ -182,7 +188,7 @@ namespace cg {
 
     template<typename T>
     Vec3<T> operator*(Vec3<T> l, float r) {
-        return Vec3<T>(l.x * r, l.y * r, l.z / r);
+        return Vec3<T>(l.x * r, l.y * r, l.z * r);
     }
 
     template<typename T>
@@ -199,6 +205,11 @@ namespace cg {
     using Vec3i = Vec3<int>;
     using Vec3d = Vec3<double>;
     using Vec3u = Vec3<unsigned int>;
+
+    template<typename T>
+    void PrintVector(Vec3<T> v){
+        std::cout << "(" << v.x << ", " << v.y << ", " << v.z << ")" << std::endl;
+    }
 
     class Color {
         public:
@@ -221,6 +232,15 @@ namespace cg {
 
     cg::Color operator*(cg::Color l, cg::Color r);
     cg::Color operator*(cg::Color l, float r);
+
+    cg::Color operator/(cg::Color l, cg::Color r);
+    cg::Color operator/(cg::Color l, float r);
+
+    cg::Color operator+(cg::Color l, cg::Color r);
+    cg::Color operator+(cg::Color l, float r);
+
+    cg::Color operator-(cg::Color l, cg::Color r);
+    cg::Color operator-(cg::Color l, float r);
 
     class Vertex {
         public:
@@ -270,6 +290,8 @@ namespace cg {
             }
     };
 
+    class Texture;
+
     class Shader {
         public:
             Shader() {}
@@ -284,6 +306,17 @@ namespace cg {
             void SetFloats(const std::string& name, cg::Vec2f value) const;
             void SetFloats(const std::string& name, cg::Vec3f value) const;
             void SetFloats(const std::string& name, cg::Color value) const;
+            void SetTexture(cg::Texture* tex) const;
+
+            template <typename T>
+            void SetArray(size_t size, T* list, unsigned int binding){
+                GLuint ssbo;
+                glGenBuffers(1, &ssbo);
+                glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+                glBufferData(GL_SHADER_STORAGE_BUFFER, size, list, GL_DYNAMIC_DRAW);
+                glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding, ssbo);
+                glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+            }
 
             unsigned int id;
         private:

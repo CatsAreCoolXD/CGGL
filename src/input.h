@@ -146,50 +146,48 @@
 #define INPUTSTATE_UP 3
 
 namespace cg {
-    namespace Input
-    {
-        // Returns true if the key is pressed.
-        bool IsKeyDown(int key);
+    // Returns true if the key is pressed.
+    bool IsKeyDown(int key);
 
-        // Returns true if the key is not pressed.
-        bool IsKeyUp(int key);
+    // Returns true if the key is not pressed.
+    bool IsKeyUp(int key);
 
-        // Returns true on the frame the key is pressed.
-        bool GetKeyDown(int key);
+    // Returns true on the frame the key is pressed.
+    bool GetKeyDown(int key);
 
-        // Returns true on the frame the key gets released.
-        bool GetKeyUp(int key);
+    // Returns true on the frame the key gets released.
+    bool GetKeyUp(int key);
 
-        // Returns the input state of the key.
-        int GetKeyState(int key);
+    // Returns the input state of the key.
+    int GetKeyState(int key);
 
-        void UpdateInputStates();
-        void SetMouseScroll(cg::Vec2d delta);
+    void UpdateInputStates();
+    void SetMouseScroll(cg::Vec2d delta);
 
-        // Returns true if the button is pressed.
-        bool IsMouseButtonDown(int button);
+    // Returns true if the button is pressed.
+    bool IsMouseButtonDown(int button);
 
-        // Returns true if the button is not pressed.
-        bool IsMouseButtonUp(int button);
+    // Returns true if the button is not pressed.
+    bool IsMouseButtonUp(int button);
 
-        // Returns true on the frame the button gets pressed.
-        bool GetMouseButtonDown(int button);
+    // Returns true on the frame the button gets pressed.
+    bool GetMouseButtonDown(int button);
 
-        // Returns true on the frame the button gets released.
-        bool GetMouseButtonUp(int button);
+    // Returns true on the frame the button gets released.
+    bool GetMouseButtonUp(int button);
 
-        // Returns the input state of the mouse button.
-        int GetMouseButtonState(int button);
+    // Returns the input state of the mouse button.
+    int GetMouseButtonState(int button);
 
-        // Get the mouse/cursor position.
-        cg::Vec2d GetMousePos();
+    // Get the mouse/cursor position.
+    cg::Vec2d GetMousePos();
+    cg::Vec2d GetMouseDelta();
 
-        // Get the mouse scroll wheel delta.
-        cg::Vec2d GetMouseScroll();
+    // Get the mouse scroll wheel delta.
+    cg::Vec2d GetMouseScroll();
 
-        int* GetKeyStates();
-        int* GetMouseButtonStates();
-    }
+    int* GetKeyStates();
+    int* GetMouseButtonStates();
 };
 
 #define IsKeyPressed(key) IsKeyDown(key)

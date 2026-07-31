@@ -4,7 +4,14 @@
 #include "types.h"
 #include "draw.h"
 
+#include <iostream>
+#include <cassert>
+
+#include "include/happly.h"
+
 namespace cg {
+    /* 2d shapes */
+
     void Quad(cg::Vec2f pos, int size, unsigned int flags){
         cg::Vec2f origin = flags & FLAG_CENTERED ? (pos - cg::Vec2f(size / 2.f, size / 2.f)) : pos;
         if (flags & FLAG_CENTERED) flags &= ~FLAG_CENTERED;
@@ -238,6 +245,8 @@ namespace cg {
         cg::Triangle3D(vertices3D);
     }
 
+    /* 3d shapes */
+
     void Triangle3D(cg::Vertex* vertices){
         // Convert vectors to an array
         if (!cg::IsUsingTexture()){
@@ -258,6 +267,7 @@ namespace cg {
             cg::Vec2f texSize = cg::GetTextureSize();
             cg::Color tint = cg::GetTextureTint();
             cg::Vec2f flip = cg::GetTextureFlip();
+            cg::Vec2f offset = cg::GetTextureOffset();
             bool renderingGlyph = cg::IsUsingTexture() && cg::GetCurrentTexture()->IsGlyph();
             float triangle[27];
             for (int i = 0; i < 3; i++){
@@ -270,12 +280,153 @@ namespace cg {
                 triangle[i * 9 + 5] = cg::clamp01(tint.b / 255.f);
                 triangle[i * 9 + 6] = cg::clamp01(tint.a / 255.f);
 
-                triangle[i * 9 + 7] = (triangle[i * 9 + 0] - texOrigin.x) / texSize.x;
-                triangle[i * 9 + 8] = flip.y - (triangle[i * 9 + 1] - texOrigin.y) / texSize.y;
+                triangle[i * 9 + 7] = (triangle[i * 9 + 0] - texOrigin.x) / texSize.x + offset.x;
+                triangle[i * 9 + 8] = (triangle[i * 9 + 1] - texOrigin.y) / texSize.y + offset.y;
+                if (flip.y == 1.f) triangle[i * 9 + 8] *= -1.f;
                 if (renderingGlyph && triangle[i * 9 + 7] < 0.01f) triangle[i * 9 + 7] = 0.0f;
                 if (renderingGlyph && triangle[i * 9 + 8] < 0.01f) triangle[i * 9 + 8] = 0.0f;
             }
             cg::PushTriangle(triangle);
         }
+    }
+
+    int Scene::CreateMaterial(cg::Color color, cg::Color emissionColor, float smoothness){
+        Material mat;
+
+        mat.color[0] = color.r;
+        mat.color[1] = color.g;
+        mat.color[2] = color.b;
+
+        mat.emissionColor[0] = emissionColor.r;
+        mat.emissionColor[1] = emissionColor.g;
+        mat.emissionColor[2] = emissionColor.b;
+        mat.emissionColor[3] = emissionColor.a;
+
+        mat.smoothness = smoothness;
+
+        materials.push_back(mat);
+
+        return materials.size() - 1;
+    }
+
+    void Scene::CreateSphere(cg::Vec3f center, float radius, int materialIndex){
+        Sphere s;
+        s.center[0] = center.x;
+        s.center[1] = center.y;
+        s.center[2] = center.z;
+
+        s.radius = radius;
+
+        s.materialIndex = materialIndex;
+
+        spheres.push_back(s);
+    }
+
+    void Scene::CreateTriangle(cg::Vec3f p1, cg::Vec3f p2, cg::Vec3f p3, int materialIndex){
+        TriangleObject t;
+        t.p1[0] = p1.x;
+        t.p1[1] = p1.y;
+        t.p1[2] = p1.z;
+
+        t.p2[0] = p2.x;
+        t.p2[1] = p2.y;
+        t.p2[2] = p2.z;
+
+        t.p3[0] = p3.x;
+        t.p3[1] = p3.y;
+        t.p3[2] = p3.z;
+
+        t.materialIndex = materialIndex;
+
+        triangles.push_back(t);
+    }
+
+    void Scene::LoadPly(std::string path){
+        happly::PLYData plyIn(path);
+
+        std::vector<std::array<double, 3>> meshVertexPositions = plyIn.getVertexPositions();
+        std::vector<std::array<unsigned char, 3>> meshVertexColors = plyIn.getVertexColors();
+        std::vector<std::vector<size_t>> meshFaceIndices = plyIn.getFaceIndices();
+
+        // Combine vertices positions and colors
+        std::vector<cg::Vertex> vertices(meshVertexPositions.size());
+        for (int i = 0; i < meshVertexPositions.size(); i++){
+            cg::Vertex& vertex = vertices[i];
+
+            vertex.pos.x = meshVertexPositions[i][0];
+            vertex.pos.y = meshVertexPositions[i][1];
+            vertex.pos.z = meshVertexPositions[i][2];
+
+            vertex.color.r = meshVertexColors[i][0];
+            vertex.color.g = meshVertexColors[i][1];
+            vertex.color.b = meshVertexColors[i][2];
+        }
+
+        // Convert face indices to vertex indices
+        std::vector<unsigned int> indices;
+        for (const auto& face : meshFaceIndices) {
+            if (face.size() < 3)
+                continue;
+
+            for (size_t i = 1; i + 1 < face.size(); ++i) {
+                indices.push_back(face[0]);
+                indices.push_back(face[i]);
+                indices.push_back(face[i + 1]);
+            }
+        }
+
+        Scene::LoadMesh(vertices, indices);
+    }
+
+    void Scene::LoadMesh(std::vector<cg::Vertex> vertices, std::vector<unsigned int> indices){
+        Mesh mesh;
+        mesh.triangleIndexStart = triangles.size();
+
+        std::cout << "Loading " << indices.size() / 3 << " triangles\n";
+        for (int i = 0; i < indices.size() / 3; i++){
+            int v0 = indices[i * 3 + 0];
+            int v1 = indices[i * 3 + 1];
+            int v2 = indices[i * 3 + 2];
+
+            // Take the average color the three vertices
+            cg::Color col;
+            col = col + vertices[v0].color / 255.f;
+            col = col + vertices[v1].color / 255.f;
+            col = col + vertices[v2].color / 255.f;
+            col = col / 3;
+
+            Scene::CreateTriangle(vertices[v0].pos, vertices[v1].pos, vertices[v2].pos, Scene::CreateMaterial(col));
+        }
+        std::cout << "Loaded Triangles" << std::endl;
+
+        Box boundingBox;
+        cg::Vec3f boxPos;
+        boundingBox.pos[0] = boxPos.x;
+        boundingBox.pos[1] = boxPos.y;
+        boundingBox.pos[2] = boxPos.z;
+        
+        cg::Vec3f min = vertices[0].pos;
+        cg::Vec3f max = vertices[0].pos;
+        for (cg::Vertex& v : vertices){
+            if (v.pos.x < min.x) min.x = v.pos.x;
+            if (v.pos.y < min.y) min.y = v.pos.y;
+            if (v.pos.z < min.z) min.z = v.pos.z;
+            
+            if (v.pos.x > max.x) max.x = v.pos.x;
+            if (v.pos.y > max.y) max.y = v.pos.y;
+            if (v.pos.z > max.z) max.z = v.pos.z;
+        }
+
+        cg::Vec3f boxSize = cg::Vec3f(max.x - min.x, max.y - min.y, max.z - min.z) / 2.f;
+        boundingBox.size[0] = boxSize.x;
+        boundingBox.size[1] = boxSize.y;
+        boundingBox.size[2] = boxSize.z;
+
+        boxes.push_back(boundingBox);
+
+        mesh.boundingBoxIndex = boxes.size() - 1;
+        mesh.triangleIndexEnd = triangles.size();
+
+        meshes.push_back(mesh);
     }
 }

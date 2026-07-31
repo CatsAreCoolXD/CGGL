@@ -11,7 +11,7 @@
 #include <GLFW/glfw3.h>
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include "include/stb_image.h"
 
 /* 
 VERTEX SHADER
@@ -80,7 +80,7 @@ namespace cg {
         cg::Shader shaderProgram;
         GLuint VAO, VBO, EBO;
 
-        int usage = GL_DYNAMIC_DRAW;
+        GLuint usage = GL_DYNAMIC_DRAW;
 
         std::vector<std::pair<int, int>> expectedVectorSizes;
     }
@@ -152,12 +152,12 @@ namespace cg {
         glfwPollEvents();
 
         // Update input states
-        cg::Input::UpdateInputStates();
+        cg::UpdateInputStates();
 
         // Max frames per second
         while (true){
             double now = glfwGetTime();
-            if (now - lastFrameTimePoint > 1.f / (float)framerateLimit)
+            if (now - lastFrameTimePoint > 1.0 / (double)framerateLimit)
                 break;
         }
 
@@ -170,6 +170,8 @@ namespace cg {
             while (fpsList.size() > 1.0 / deltaTime - 1) fpsList.pop_back();
             fpsList.insert(fpsList.begin(), 1.0 / deltaTime);
         } else fpsList.insert(fpsList.begin(), 1.0 / deltaTime);
+
+        useTexture = false;
     }
 
     size_t HashVertex(float* vertex, int size){
@@ -184,11 +186,15 @@ namespace cg {
         return hash;
     }
 
-    void PushNewTriangleBuffer(cg::Texture* tex = nullptr){
-        triangleBuffers.emplace_back();
-        cg::TriangleBuffer& buffer = triangleBuffers.back();
-        if (tex != nullptr)
-            buffer = cg::TriangleBuffer(true, tex);
+    void PushNewTriangleBuffer(cg::Texture* tex, cg::Shader* shader){
+        cg::TriangleBuffer& buffer = triangleBuffers.emplace_back();
+        if (tex) {
+            buffer.SetTexture(tex);
+            useTexture = true;
+        } else useTexture = false;
+
+        if (shader) buffer.SetShader(shader);
+        else buffer.SetShader(&shaderProgram);
         
         // Only reserve the vectors if it actually matters
         int i = triangleBuffers.size() - 1;
@@ -196,6 +202,10 @@ namespace cg {
             buffer.GetVertices().reserve(expectedVectorSizes[i].first);
             buffer.GetIndices().reserve(expectedVectorSizes[i].second);
         }
+    }
+
+    cg::TriangleBuffer& GetActiveTriangleBuffer(){
+        return triangleBuffers.back();
     }
 
     void PushTriangle(float* triangle){
@@ -242,7 +252,12 @@ namespace cg {
         }
     }
 
+    cg::TriangleBuffer& NewTriangleBuffer(){
+        return triangleBuffers.emplace_back();
+    }
+
     void DrawTriangles(cg::TriangleBuffer& buffer){
+        cg::Shader& shader = *buffer.GetShader();
         if (!buffer.IsTexture()){
             glBindVertexArray(VAO);
             glBindBuffer(GL_ARRAY_BUFFER, VBO);
@@ -261,14 +276,15 @@ namespace cg {
             glEnableVertexAttribArray(1);
 
             // Use the shader program
-            shaderProgram.SetInt("renderType", NORMAL_RENDERING);
-            shaderProgram.Use();
+            shader.SetInt("renderType", NORMAL_RENDERING);
+            shader.Use();
 
             // Draw the triangles
             glBindVertexArray(VAO);
             glDrawElements(GL_TRIANGLES, buffer.GetIndices().size(), GL_UNSIGNED_INT, 0);
         } else {
             glBindVertexArray(VAO);
+
             glBindBuffer(GL_ARRAY_BUFFER, VBO);
             glBufferData(GL_ARRAY_BUFFER, buffer.GetVertices().size() * sizeof(float), buffer.GetVertices().data(), usage);
 
@@ -289,10 +305,11 @@ namespace cg {
             glEnableVertexAttribArray(2);
 
             // Use the texture shader program
-            shaderProgram.SetInt("renderType", (buffer.GetTexture()->IsGlyph() ? GLYPH_RENDERING : TEXTURE_RENDERING));
-            shaderProgram.Use();
+            shader.SetInt("renderType", (buffer.GetTexture()->IsGlyph() ? GLYPH_RENDERING : TEXTURE_RENDERING));
+            shader.Use();
 
             // Bind the texture and draw the triangles
+            glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, buffer.GetTexture()->textureId);
             glBindVertexArray(VAO);
 
@@ -322,6 +339,46 @@ namespace cg {
         cg::Draw(tex, flags);
     }
 
+    // Todo: Actually make 3d rendering, this doesnt really work
+    void Draw(cg::Scene& scene, cg::Vec3f cameraPos){
+        cg::PushNewTriangleBuffer();
+        std::vector<cg::TriangleObject> triangles = scene.GetTriangles();
+
+        for (cg::TriangleObject triangle : triangles){
+            cg::Material mat = scene.GetMaterials()[triangle.materialIndex];
+            float t[21];
+
+            for (int i = 0; i < 3; i++) {
+                t[i * 7 + 3] = mat.color[0];
+                t[i * 7 + 4] = mat.color[1];
+                t[i * 7 + 5] = mat.color[2];
+                t[i * 7 + 6] = 1.f;
+            }
+
+            t[0] = triangle.p1[0] - cameraPos.x;
+            t[1] = triangle.p1[1] - cameraPos.y;
+            t[2] = triangle.p1[2] - cameraPos.z;
+
+            t[7] = triangle.p2[0] - cameraPos.x;
+            t[8] = triangle.p2[1] - cameraPos.y;
+            t[9] = triangle.p2[2] - cameraPos.z;
+
+            t[14] = triangle.p3[0] - cameraPos.x;
+            t[15] = triangle.p3[1] - cameraPos.y;
+            t[16] = triangle.p3[2] - cameraPos.z;
+
+            cg::PushTriangle(t);
+        }
+    }
+
+    void DrawFullscreenShader(cg::Shader* shader, cg::Texture* tex){
+        shader->SetFloats("resolution", cg::Vec2f(cg::GetWindowSize()));
+
+        cg::PushNewTriangleBuffer(tex, shader);
+        cg::Rectangle(cg::Vec2f(0,0), cg::GetWindowSize(), FLAG_NO_BORDER); // Draw a full-screen quad
+        cg::StopUsingTexture();
+    }
+
     int GetVerticesAmount(){
         int amount = 0;
         for (auto& b : triangleBuffers){
@@ -346,7 +403,7 @@ namespace cg {
 
     void UseTexture(cg::Texture& tex){
         useTexture = true;
-        cg::PushNewTriangleBuffer(&tex);
+        cg::PushNewTriangleBuffer(&tex, &shaderProgram);
     }
 
     void StopUsingTexture(){
@@ -374,12 +431,24 @@ namespace cg {
         return triangleBuffers.back().GetTexture()->flip; 
     }
 
+    cg::Vec2f GetTextureOffset() { 
+        return triangleBuffers.back().GetTexture()->offset; 
+    }
+
     cg::Texture* GetCurrentTexture(){
         return triangleBuffers.back().GetTexture();
     }
 
+    GLuint GetUsage(){
+        return usage;
+    }
+
     Texture::Texture(const char* path, int wrapping) {
         Texture::LoadImage(path, wrapping);
+    }
+
+    void UseShaderProgram(){
+        shaderProgram.Use();
     }
 
     void Texture::LoadImage(const char* path, int wrapping){

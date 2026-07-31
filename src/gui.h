@@ -36,7 +36,7 @@ namespace cg {
     bool GUIButton(std::string text, unsigned int flags = 0);
 
     template <typename T>
-    void GUISlider(std::string text, T& value, T min = 0.f, T max = 0.f, float scale = 1.f);
+    bool GUISlider(std::string text, T& value, T min = 0.f, T max = 0.f, float scale = 1.f);
 
     void GUICheckBox(std::string text, bool& value);
 }

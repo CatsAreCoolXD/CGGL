@@ -138,12 +138,12 @@ namespace cg
         cg::Vec2f buttonSize = cg::MeasureText(text) + cg::Vec2f(fontSize * 1.8f, fontSize);
         currentSection->IncrementCurrentPosition(buttonSize, sameLine);
 
-        cg::Vec2f mousePos = cg::Input::GetMousePos();
+        cg::Vec2f mousePos = cg::GetMousePos();
         cg::Vec2f buttonPos = currentSection->GetCurrentPos();
         cg::Vec2f delta = mousePos - buttonPos;
 
         bool hovering = delta.x > 0 && delta.y > 0 && delta.x < buttonSize.x && delta.y < buttonSize.y;
-        bool pressingButton = hovering && cg::Input::IsMouseButtonDown(MOUSE_BUTTON_LEFT);
+        bool pressingButton = hovering && cg::IsMouseButtonDown(MOUSE_BUTTON_LEFT);
 
         float factor = HOVER_COLOR_SCALE_FACTOR * (pressingButton ? HOVER_COLOR_SCALE_FACTOR : 1.f);
         if (hovering) cg::PushPrimaryColor(cg::GetCurrentStyle().primaryColor * cg::Color(factor, factor, factor, 1.f));
@@ -153,14 +153,14 @@ namespace cg
 
         if (hovering) cg::PopStyle();
 
-        return hovering && cg::Input::GetMouseButtonDown(MOUSE_BUTTON_LEFT);
+        return hovering && cg::GetMouseButtonDown(MOUSE_BUTTON_LEFT);
     }
 
     template <typename T>
-    void GUISlider(std::string text, T& value, T min, T max, float scale) {
+    bool GUISlider(std::string text, T& value, T min, T max, float scale) {
         GUI_REQUIRE_SECTION("GUISlider()")
 
-        if (guiElementsInformation[text] && cg::Input::IsMouseButtonUp(MOUSE_BUTTON_LEFT))
+        if (guiElementsInformation[text] && cg::IsMouseButtonUp(MOUSE_BUTTON_LEFT))
             guiElementsInformation[text] = false;
 
         int fontSize = cg::GetCurrentFont()->GetFontSize();
@@ -173,17 +173,22 @@ namespace cg
         cg::RoundedRectangle(pos, cg::Vec2f(size.x, size.y), cg::GetRoundedSize(size));
 
         const float knobRadius = size.y / 2.f;
-        cg::Vec2f mousePos(cg::Input::GetMousePos());
+        cg::Vec2f mousePos(cg::GetMousePos());
         float knobPosX = ((float)value - (float)min) / ((float)max - (float)min);
         cg::Vec2f knobPos = pos + cg::Vec2f(knobPosX * size.x, size.y / 2.f);
         bool hovering = cg::Vec2f(mousePos - knobPos).Length() < knobRadius;
-        bool draggingKnob = (hovering && cg::Input::GetMouseButtonDown(MOUSE_BUTTON_LEFT)) || guiElementsInformation[text];
+        bool draggingKnob = (hovering && cg::GetMouseButtonDown(MOUSE_BUTTON_LEFT)) || guiElementsInformation[text];
 
+        bool changedValue = false;
         if (draggingKnob) {
-            value = min + cg::clamp01((mousePos.x - pos.x) / size.x) * (max - min);
+            float newValue = min + cg::clamp01((mousePos.x - pos.x) / size.x) * (max - min);
             knobPosX = ((float)value - (float)min) / ((float)max - (float)min);
             knobPos = pos + cg::Vec2f(knobPosX * size.x, size.y / 2.f);
             guiElementsInformation[text] = true;
+            if (newValue != value){
+                changedValue = true;
+                value = newValue;
+            }
         }
         
         cg::Text(text, pos + cg::Vec2f(size.x + currentSection->GetSpacing(), size.y / 2.f - cg::MeasureText(text).y / 2.f), FLAG_USE_SECONDARY_COLOR);
@@ -193,11 +198,13 @@ namespace cg
         cg::PopStyle();
 
         cg::Text(std::to_string(value), pos + size / 2.f, FLAG_CENTERED | FLAG_USE_SECONDARY_COLOR);
+
+        return changedValue;
     }
 
-    template void cg::GUISlider<int>(std::string, int&, int, int, float);
-    template void cg::GUISlider<float>(std::string, float&, float, float, float);
-    template void cg::GUISlider<double>(std::string, double&, double, double, float);
+    template bool cg::GUISlider<int>(std::string, int&, int, int, float);
+    template bool cg::GUISlider<float>(std::string, float&, float, float, float);
+    template bool cg::GUISlider<double>(std::string, double&, double, double, float);
 
     void GUICheckBox(std::string text, bool& value){
         GUI_REQUIRE_SECTION("GUICheckBox()");
@@ -209,11 +216,11 @@ namespace cg
         currentSection->IncrementCurrentPosition(bounds, sameLine);
 
         cg::Vec2f pos = currentSection->GetCurrentPos();
-        cg::Vec2f mousePos = cg::Input::GetMousePos();
+        cg::Vec2f mousePos = cg::GetMousePos();
         cg::Vec2f delta = mousePos - pos;
 
         bool hovering = delta.x > 0 && delta.y > 0 && delta.x < checkBoxSize.x && delta.y < checkBoxSize.y;
-        if (hovering && cg::Input::GetMouseButtonDown(MOUSE_BUTTON_LEFT)) value = !value;
+        if (hovering && cg::GetMouseButtonDown(MOUSE_BUTTON_LEFT)) value = !value;
 
         #ifdef GUI_CHECKBOX_OPTION_1
 

@@ -8,6 +8,8 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include "draw.h"
+
 namespace cg {
     float clamp(float v, float min, float max){
         if (v < min) return min;
@@ -21,6 +23,27 @@ namespace cg {
 
     cg::Color operator*(cg::Color l, float r) {
         return cg::Color(l.r * r, l.g * r, l.b * r, l.a);
+    }
+
+    cg::Color operator/(cg::Color l, cg::Color r){
+        return cg::Color(l.r / r.r, l.g / r.g, l.b / r.b, l.a / r.a);
+    }
+    cg::Color operator/(cg::Color l, float r){
+        return cg::Color(l.r / r, l.g / r, l.b / r, l.a);
+    }
+
+    cg::Color operator+(cg::Color l, cg::Color r) {
+        return cg::Color(l.r + r.r, l.g + r.g, l.b + r.b, l.a + r.a);
+    }
+    cg::Color operator+(cg::Color l, float r){
+        return cg::Color(l.r + r, l.g + r, l.b + r, l.a);
+    }
+
+    cg::Color operator-(cg::Color l, cg::Color r) {
+        return cg::Color(l.r - r.r, l.g - r.g, l.b - r.b, l.a - r.a);
+    }
+    cg::Color operator-(cg::Color l, float r){
+        return cg::Color(l.r - r, l.g - r, l.b - r, l.a);
     }
 
     Shader::Shader(const char* vertexPath, const char* fragmentPath){
@@ -143,5 +166,8 @@ namespace cg {
     }
     void Shader::SetFloats(const std::string& name, cg::Color value) const {
         glUniform4f(glGetUniformLocation(id, name.c_str()), value.r, value.g, value.b, value.a);
+    }
+    void Shader::SetTexture(cg::Texture* tex) const {
+        glBindTexture(GL_TEXTURE_2D, tex->textureId);
     }
 }

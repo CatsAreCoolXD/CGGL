@@ -14,14 +14,19 @@ namespace cg {
     namespace {
         GLFWwindow* window = nullptr;
 
+        void mouse_scroll_callback(GLFWwindow* window, double x, double y){
+            cg::SetMouseScroll(cg::Vec2d(x, y));
+        }
         void framebuffer_size_callback(GLFWwindow* window, int width, int height)
         {
             glViewport(0, 0, width, height);
         }
+    }
 
-        void mouse_scroll_callback(GLFWwindow* window, double x, double y){
-            cg::Input::SetMouseScroll(cg::Vec2d(x, y));
-        }
+    cg::Vec2i GetWindowSize(){
+        int w,h;
+        glfwGetWindowSize(window, &w, &h);
+        return cg::Vec2i(w,h);
     }
 
     void Initialize(std::string windowName, cg::Vec2i size, cg::WindowSettings settings){
@@ -72,6 +77,10 @@ namespace cg {
 
         cg::InitializeDrawing();
         cg::InitiliazeFreeType();
+    }
+
+    void DefineRayTracing(){
+        #define RAYTRACING
     }
 
     void ToggleVSync(bool on){

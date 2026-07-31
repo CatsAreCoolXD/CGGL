@@ -1,4 +1,6 @@
 #include <iostream>
+
+#define CGGL_INCLUDE_RAYTRACING
 #include "cggl.h"
 
 int main(){
@@ -6,8 +8,11 @@ int main(){
     settings.resizable = true;
     settings.antiAliasing = true;
     cg::Initialize("CGGL Window", cg::Vec2i(1920, 1080), settings);
-    cg::SetFPSLimit(1000);
+    cg::SetFPSLimit(60);
     cg::ToggleVSync(false);
+
+    cg::Raytracing::InitRaytracing();
+    cg::DefineRayTracing();
 
     cg::SetBackgroundColor(cg::Color(2, 62, 138));
 
@@ -36,95 +41,46 @@ int main(){
 
     cg::PushQuality(4);
 
+    int raysPerPixel = 5, maxBounces = 5;
+    float blurStrength = 0.5f, smoothness = 0.f;
+
+    cg::Scene scene;
+
+    scene.CreateSphere(cg::Vec3f(-5.f, -2.f, 10.f), 1.f, scene.CreateMaterial(cg::Color(0.f, 1.f, 0.f))); // Green Sphere
+    scene.CreateSphere(cg::Vec3f(-2.0f, -1.5f, 10.f), 1.5f, scene.CreateMaterial(cg::Color(1.f, 1.f, 0.f))); // Yellow Sphere
+    scene.CreateSphere(cg::Vec3f(1.5f, -1.5f, 10.f), 2.f, scene.CreateMaterial(cg::Color(1.f, 0.f, 0.f))); // Red Sphere
+    scene.CreateSphere(cg::Vec3f(7.f, -3.f, 10.f), 3.f, scene.CreateMaterial(cg::Color(1.f, 1.f, 1.f), cg::Color(0.f, 0.f, 0.f, 0.f), smoothness)); // White Sphere
+
+    scene.CreateSphere(cg::Vec3f(0.f, -101.0f, 0.f), 100.f, scene.CreateMaterial(cg::Color(0.f, 1.f, 1.f))); // Cyan, big Sphere
+
+    scene.CreateSphere(cg::Vec3f(-10.f, 10.f, -25.f), 10.f, scene.CreateMaterial(cg::Color(), cg::Color(1.f, 1.f, 1.f, 5.f))); // Sun
+
+    scene.LoadPly("src/models/monkey.ply");
+
     while (cg::WindowIsOpen()){
-        if (cg::Input::IsKeyDown(KEY_UP)) roundedSize += 1.f;
-        if (cg::Input::IsKeyDown(KEY_DOWN)) roundedSize -= 1.f;
-        if (cg::Input::GetKeyDown(KEY_SPACE)) {
-            wireframeMode = !wireframeMode;
-            cg::SetRenderingMode(wireframeMode ? RENDERING_MODE_WIREFRAME : RENDERING_MODE_FILL);
+        if (cg::IsKeyUp(KEY_SPACE)) {
+            cg::Raytracing::SetRaysPerPixels(raysPerPixel);
+            cg::Raytracing::SetMaxBounces(maxBounces);
+            cg::Raytracing::SetBlurStrength(blurStrength);
+
+            cg::Raytracing::UpdateFreecam();
+
+            cg::Raytracing::RayTrace(scene);
         }
 
-        if (cg::Input::GetMouseButtonDown(MOUSE_BUTTON_LEFT)){
-            center.x -= 10.f;
-        }
-        if (cg::Input::GetMouseButtonDown(MOUSE_BUTTON_RIGHT)){
-            center.x += 10.f;
-        }
-
-        cg::PushPrimaryColor(cg::Color(100, 100, 100));
-        roundedSize += cg::Input::GetMouseScroll().y;
-        srand(seed);
-        for (int i = 0; i < amountOfShapes; i++){
-            if (!drawShapes) break;
-            int r = rand() % 11;
-            cg::Vec2f pos(rand() % 1920, rand() % 1080);
-            int s = rand() % 50 + 25;
-            int s2 = rand() % 50 + 25;
-            int thickness = 5;
-            cg::Vec2f size(s, s2);
-            unsigned int flag = FLAG_NO_BORDER | FLAG_CENTERED;
-            switch (r)
-            {
-            case 0:
-                cg::Square(pos, s, flag);
-                break;
-            case 1:
-                cg::RoundedSquare(pos, s, roundedSize, flag);
-                break;
-            case 2:
-                cg::UnfilledSquare(pos, s, thickness, flag);
-                break;
-            case 3:
-                cg::UnfilledRoundedSquare(pos, s, thickness, roundedSize, flag);
-                break;
-            case 4:
-                cg::Rectangle(pos, size, flag);
-                break;
-            case 5:
-                cg::RoundedRectangle(pos, size, roundedSize, flag);
-                break;
-            case 6:
-                cg::UnfilledRectangle(pos, size, thickness, flag);
-                break;
-            case 7:
-                cg::UnfilledRoundedRectangle(pos, size, thickness, roundedSize, flag);
-                break;
-            case 8:
-                cg::Circle(pos, s, flag);
-                break;
-            case 9:
-                cg::UnfilledCircle(pos, s, thickness, flag);
-                break;
-            case 10:
-                cg::SemiCircle(pos, s, s2 % 4, flag);
-                break;
-            case 11:
-                cg::UnfilledSemiCircle(pos, s, thickness, s2 % 4, flag);
-                break;
-            default:
-                break;
-            }
-        }
-        cg::PopStyle();
-
-        cg::GUIStartSection("Control Panel", cg::Vec2f(20,20), cg::Vec2f(400, 1000));
+        cg::SetBackgroundColor(cg::Color(0,0,0,0));
+        cg::GUIStartSection("Control Panel", cg::Vec2f(1500,20), cg::Vec2f(400, 1000));
+        cg::SetBackgroundColor(cg::Color(2, 62, 138));
         
         cg::PushFont(font);
         cg::GUIText("FPS: " + std::to_string((int)cg::GetAverageFPS()), FLAG_USE_SECONDARY_COLOR);
         cg::PopFont();
-        cg::GUIText("Vertices: " + std::to_string(cg::GetVerticesAmount()), FLAG_USE_SECONDARY_COLOR);
-        cg::GUIText("Indices: " + std::to_string(cg::GetIndicesAmount()), FLAG_USE_SECONDARY_COLOR);
-        cg::GUIText("Textures: " + std::to_string(cg::GetTexturesAmount()), FLAG_USE_SECONDARY_COLOR);
-        if (cg::GUIButton("Button"))
-            std::cout << "Button 1 Clicked\n";
-        cg::GUISameLine();
-        if (cg::GUIButton("B"))
-            std::cout << "Button 2 Clicked\n";
-        if (cg::GUIButton("This is an example of a really long button"))
-            std::cout << "Button 3 Clicked\n";
 
-        cg::GUISlider("Amount Of Shapes", amountOfShapes, 0, 1000);
-        cg::GUICheckBox("Draw Shapes", drawShapes);
+        cg::GUISlider("Rays Per Pixel", raysPerPixel, 0, 50);
+        cg::GUISlider("Max Bounces", maxBounces, 0, 100);
+        cg::GUISlider("Blur Strength", blurStrength, 0.f, 100.f);
+        if (cg::GUIButton("Reset Accumulation")) cg::Raytracing::QueueClear();
+        cg::GUIText("Press SPACE to stop raytracing", FLAG_USE_SECONDARY_COLOR);
 
         cg::GUIEndSection();
 

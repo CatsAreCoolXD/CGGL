@@ -38,6 +38,7 @@ namespace cg {
             cg::Texture tex;
             tex.LoadGlyph(face);
             tex.FlipVertically();
+            tex.offset.y = -1.f;
 
             FontCharacter fontCharacter;
             fontCharacter.tex = tex;
