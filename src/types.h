@@ -8,6 +8,9 @@
 #include <vector>
 
 #include <glad/glad.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #define REPEAT GL_REPEAT
 #define MIRRORED_REPEAT GL_MIRRORED_REPEAT
@@ -306,6 +309,7 @@ namespace cg {
             void SetFloats(const std::string& name, cg::Vec2f value) const;
             void SetFloats(const std::string& name, cg::Vec3f value) const;
             void SetFloats(const std::string& name, cg::Color value) const;
+            void SetMatrix4x4(std::string name, glm::mat4& mat) const;
             void SetTexture(cg::Texture* tex) const;
 
             template <typename T>

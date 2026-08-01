@@ -49,6 +49,14 @@ struct Mesh {
     int boundingBoxIndex;
 };
 
+struct BVHNode {
+    vec3 pos;
+    int childA;
+    vec3 size;
+    int childB;
+    int trianglesStart;
+    int trianglesEnd;
+};
 
 uniform int amountOfMaterials;
 layout (std430, binding = 0) buffer materialBuffer
@@ -78,6 +86,12 @@ uniform int amountOfMeshes;
 layout (std430, binding = 4) buffer meshBuffer
 {
     Mesh meshes[];
+};
+
+uniform int amountOfBVHNodes;
+layout (std430, binding = 5) buffer nodeBuffer
+{
+    BVHNode nodes[];
 };
 
 uniform vec2 resolution;
@@ -134,6 +148,39 @@ vec2 RandomPointInCircle(inout uint seed){
 
 // Box:             https://www.shadertoy.com/view/ld23DV
 void RayBoxIntersection(in Ray ray, in Box box, inout HitInfo hitInfo) {
+    hitInfo.hit = false;
+
+    vec3 rd = ray.direction;
+    vec3 ro = ray.origin - box.pos;
+
+    vec3 m = sign(rd)/max(abs(rd), 1e-8);
+    vec3 n = m*ro;
+    vec3 k = abs(m)*box.size;
+	
+    vec3 t1 = -n - k;
+    vec3 t2 = -n + k;
+
+	float tN = max( max( t1.x, t1.y ), t1.z );
+	float tF = min( min( t2.x, t2.y ), t2.z );
+	
+    if (tN > tF || tF <= 0.) {
+        hitInfo.hit = false;
+    } else {
+        if (true) {
+            hitInfo.hit = true;
+        	hitInfo.normal = -sign(rd)*step(t1.yzx,t1.xyz)*step(t1.zxy,t1.xyz);
+            hitInfo.dst = tN;
+        } else if (true) { 
+            hitInfo.hit = true;
+        	hitInfo.normal = -sign(rd)*step(t1.yzx,t1.xyz)*step(t1.zxy,t1.xyz);
+            hitInfo.dst = tF;
+        } else {
+            hitInfo.hit = false;
+        }
+    }
+}
+
+void RayBoxIntersection(in Ray ray, in BVHNode box, inout HitInfo hitInfo) {
     hitInfo.hit = false;
 
     vec3 rd = ray.direction;
@@ -241,18 +288,18 @@ void TestTriangles(in Ray ray, int start, int end, inout IntersectInfo result){
     }
 }
 
+void RayBVHIntersection(in Ray ray, inout HitInfo result, int nodeIndex){
+    RayBoxIntersection(ray, nodes[nodeIndex], result);
+}
+
 void TestMeshes(in Ray ray, inout IntersectInfo result){
     result.hit = false;
     result.dst = INF;
     for (int i = 0; i < amountOfMeshes; i++){
         HitInfo boundingBoxHitInfo;
-        RayBoxIntersection(ray, boxes[meshes[i].boundingBoxIndex], boundingBoxHitInfo);
+        RayBVHIntersection(ray, boundingBoxHitInfo, meshes[i].boundingBoxIndex);
         if (boundingBoxHitInfo.hit){
-            IntersectInfo meshHitInfo;
-            TestTriangles(ray, meshes[i].triangleIndexStart, meshes[i].triangleIndexEnd, meshHitInfo);
-            if (meshHitInfo.hit && meshHitInfo.dst < result.dst){
-                result = meshHitInfo;
-            }
+            TestTriangles(ray, nodes[meshes[i].boundingBoxIndex].trianglesStart, nodes[meshes[i].boundingBoxIndex].trianglesEnd, result);
         }
     }
 }

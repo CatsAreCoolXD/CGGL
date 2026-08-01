@@ -16,4 +16,4 @@ target_sources(main
         src/example.cpp src/window.cpp src/style.cpp src/shape.cpp src/types.cpp src/draw.cpp src/input.cpp src/text.cpp src/gui.cpp
 )
 
-target_link_libraries(main PRIVATE glfw glad freetype)
+target_link_libraries(main PRIVATE glfw glad glm freetype)

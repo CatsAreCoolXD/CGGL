@@ -342,7 +342,7 @@ namespace cg {
     }
 
     void Scene::LoadPly(std::string path){
-        happly::PLYData plyIn(path, true);
+        happly::PLYData plyIn(path);
 
         std::vector<std::array<double, 3>> meshVertexPositions = plyIn.getVertexPositions();
         std::vector<std::array<unsigned char, 3>> meshVertexColors = plyIn.getVertexColors();
@@ -353,7 +353,7 @@ namespace cg {
         for (int i = 0; i < meshVertexPositions.size(); i++){
             cg::Vertex& vertex = vertices[i];
 
-            vertex.pos.x = meshVertexPositions[i][0];
+            vertex.pos.x = -meshVertexPositions[i][0];
             vertex.pos.y = meshVertexPositions[i][1];
             vertex.pos.z = meshVertexPositions[i][2];
 
@@ -399,7 +399,7 @@ namespace cg {
         }
         std::cout << "Loaded Triangles" << std::endl;
 
-        Box boundingBox;
+        BVHNode rootNode;
         
         cg::Vec3f min = vertices[0].pos;
         cg::Vec3f max = vertices[0].pos;
@@ -414,20 +414,28 @@ namespace cg {
         }
 
         cg::Vec3f boxSize = cg::Vec3f(max - min) / 2.f;
-        boundingBox.size[0] = boxSize.x;
-        boundingBox.size[1] = boxSize.y;
-        boundingBox.size[2] = boxSize.z;
+        rootNode.size[0] = boxSize.x;
+        rootNode.size[1] = boxSize.y;
+        rootNode.size[2] = boxSize.z;
 
         cg::Vec3f boxPos = cg::Vec3f(min + max) / 2.f;
-        boundingBox.pos[0] = boxPos.x;
-        boundingBox.pos[1] = boxPos.y;
-        boundingBox.pos[2] = boxPos.z;
+        rootNode.pos[0] = boxPos.x;
+        rootNode.pos[1] = boxPos.y;
+        rootNode.pos[2] = boxPos.z;
 
-        boxes.push_back(boundingBox);
-
-        mesh.boundingBoxIndex = boxes.size() - 1;
+        mesh.boundingBoxIndex = Scene::ConvertTrianglesToBVH(rootNode);
         mesh.triangleIndexEnd = triangles.size();
 
+        rootNode.childA = 1;
+        rootNode.childB = 1;
+        rootNode.trianglesStart = 0;//mesh.triangleIndexStart;
+        rootNode.trianglesEnd = mesh.triangleIndexEnd;
+
+        bvhNodes.push_back(rootNode);
         meshes.push_back(mesh);
+    }
+
+    int Scene::ConvertTrianglesToBVH(BVHNode rootNode){
+        return bvhNodes.size();
     }
 }

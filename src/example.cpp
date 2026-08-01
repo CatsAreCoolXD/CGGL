@@ -8,7 +8,7 @@ int main(){
     settings.resizable = true;
     settings.antiAliasing = true;
     cg::Initialize("CGGL Window", cg::Vec2i(1920, 1080), settings);
-    cg::SetFPSLimit(180);
+    cg::SetFPSLimit(1000);
     cg::ToggleVSync(false);
 
     cg::Raytracing::InitRaytracing();
@@ -55,17 +55,20 @@ int main(){
 
     scene.CreateSphere(cg::Vec3f(35.f, 30.f, 0.f), 10.f, scene.CreateMaterial(cg::Color(), cg::Color(1.f, 1.f, 1.f, 15.f))); // Sun
 
-    scene.LoadPly("src/models/tree2.ply");
+    scene.LoadPly("src/models/tree.ply");
+
+    cg::Raytracing::LoadScene(scene);
 
     while (cg::WindowIsOpen()){
+        cg::Raytracing::UpdateFreecam();
         if (cg::IsKeyUp(KEY_SPACE)) {
             cg::Raytracing::SetRaysPerPixels(raysPerPixel);
             cg::Raytracing::SetMaxBounces(maxBounces);
             cg::Raytracing::SetBlurStrength(blurStrength);
 
-            cg::Raytracing::UpdateFreecam();
-
             cg::Raytracing::RayTrace(scene);
+        } else {
+            cg::Draw(scene, cg::Raytracing::GetCameraPos(), cg::Raytracing::GetCameraLookAt());
         }
 
         cg::SetBackgroundColor(cg::Color(0,0,0,0));

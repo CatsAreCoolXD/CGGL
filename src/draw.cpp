@@ -9,6 +9,9 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "include/stb_image.h"
@@ -31,6 +34,23 @@ const std::string VERTEX_SHADER_SOURCE =
 "    gl_Position = vec4(pos, 1.0);"
 "    color = vertColor;"
 "    texCoord = texCoords;"
+"}";
+
+const std::string VERTEX_SHADER_SOURCE_3D =
+"#version 330 core\n"
+"layout (location = 0) in vec3 pos;"
+"layout (location = 1) in vec4 vertColor;"
+""
+"uniform mat4 model;"
+"uniform mat4 view;"
+"uniform mat4 projection;"
+""
+"out vec4 color;"
+""
+"void main()"
+"{"
+"    gl_Position = projection * view * model * vec4(pos, 1.0);"
+"    color = vertColor;"
 "}";
 
 /* 
@@ -77,7 +97,7 @@ namespace cg {
         double deltaTime = 0;
         std::vector<double> fpsList;
 
-        cg::Shader shaderProgram;
+        cg::Shader shaderProgram, shaderProgram3d;
         GLuint VAO, VBO, EBO;
 
         GLuint usage = GL_DYNAMIC_DRAW;
@@ -88,6 +108,7 @@ namespace cg {
     void InitializeDrawing(){
         // Create the shader program
         shaderProgram.CreateFromStrings(VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE);
+        shaderProgram3d.CreateFromStrings(VERTEX_SHADER_SOURCE_3D, FRAGMENT_SHADER_SOURCE);
         
         glGenVertexArrays(1, &VAO);
         glGenBuffers(1, &VBO);
@@ -146,7 +167,7 @@ namespace cg {
         triangleBuffers.clear();
 
         glClearColor(colorToFloat(backgroundColor));
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Check for events and update the window state
         glfwPollEvents();
@@ -339,10 +360,24 @@ namespace cg {
         cg::Draw(tex, flags);
     }
 
-    // Todo: Actually make 3d rendering, this doesnt really work
-    void Draw(cg::Scene& scene, cg::Vec3f cameraPos){
+    void Draw(cg::Scene& scene, cg::Vec3f cameraPos, cg::Vec3f cameraLookAt){
         cg::PushNewTriangleBuffer();
         std::vector<cg::TriangleObject> triangles = scene.GetTriangles();
+
+        cameraPos.z *= -1.f;
+        cameraLookAt.z *= -1.f;
+
+        glm::mat4 proj = glm::perspective(glm::radians(45.0f), (float)cg::GetWindowSize().x/(float)cg::GetWindowSize().y, 0.1f, 100.f);
+        glm::mat4 model = glm::mat4(1.f);
+
+        glm::mat4 view;
+        glm::vec3 camPos = glm::vec3(cameraPos.x, cameraPos.y, cameraPos.z);
+        glm::vec3 camDirection = glm::normalize(camPos - glm::vec3(cameraLookAt.x, cameraLookAt.y, cameraLookAt.z));
+
+        glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f); 
+        glm::vec3 camRight = glm::normalize(glm::cross(up, camDirection));
+        glm::vec3 camUp = glm::cross(camDirection, camRight);
+        view = glm::lookAt(camPos, glm::vec3(cameraLookAt.x, cameraLookAt.y, cameraLookAt.z), camUp);
 
         for (cg::TriangleObject triangle : triangles){
             cg::Material mat = scene.GetMaterials()[triangle.materialIndex];
@@ -355,20 +390,56 @@ namespace cg {
                 t[i * 7 + 6] = 1.f;
             }
 
-            t[0] = triangle.p1[0] - cameraPos.x;
-            t[1] = triangle.p1[1] - cameraPos.y;
-            t[2] = triangle.p1[2] - cameraPos.z;
+            t[0] = triangle.p1[0];
+            t[1] = triangle.p1[1];
+            t[2] = -triangle.p1[2];
 
-            t[7] = triangle.p2[0] - cameraPos.x;
-            t[8] = triangle.p2[1] - cameraPos.y;
-            t[9] = triangle.p2[2] - cameraPos.z;
+            t[7] = triangle.p2[0];
+            t[8] = triangle.p2[1];
+            t[9] = -triangle.p2[2];
 
-            t[14] = triangle.p3[0] - cameraPos.x;
-            t[15] = triangle.p3[1] - cameraPos.y;
-            t[16] = triangle.p3[2] - cameraPos.z;
+            t[14] = triangle.p3[0];
+            t[15] = triangle.p3[1];
+            t[16] = -triangle.p3[2];
 
             cg::PushTriangle(t);
         }
+        cg::TriangleBuffer& buffer = triangleBuffers.back();
+
+        // Enable Z-buffer
+        glEnable(GL_DEPTH_TEST);
+
+        glBindVertexArray(VAO);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferData(GL_ARRAY_BUFFER, buffer.GetVertices().size() * sizeof(float), buffer.GetVertices().data(), usage);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, buffer.GetIndices().size() * sizeof(unsigned int), buffer.GetIndices().data(), usage);
+
+        // Tell OpenGL how it should interpret vertex data
+        // Positions
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+
+        // Color
+        glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)(3*sizeof(float)));
+        glEnableVertexAttribArray(1);
+
+        // Use the shader program
+        shaderProgram3d.Use();
+        shaderProgram3d.SetInt("renderType", NORMAL_RENDERING);
+        shaderProgram3d.SetMatrix4x4("model", model);
+        shaderProgram3d.SetMatrix4x4("view", view);
+        shaderProgram3d.SetMatrix4x4("projection", proj);
+
+        // Draw the triangles
+        glBindVertexArray(VAO);
+        glDrawElements(GL_TRIANGLES, buffer.GetIndices().size(), GL_UNSIGNED_INT, 0);
+
+        // Disable Z-buffer
+        glDisable(GL_DEPTH_TEST);
+
+        triangleBuffers.pop_back();
     }
 
     void DrawFullscreenShader(cg::Shader* shader, cg::Texture* tex){

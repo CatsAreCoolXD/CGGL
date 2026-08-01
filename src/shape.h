@@ -77,6 +77,17 @@ namespace cg {
         int boundingBoxIndex;
     };
 
+    struct BVHNode {
+        float pos[3];
+        int childA;
+        float size[3];
+        int childB;
+
+        int trianglesStart;
+        int trianglesEnd;
+        int _offset2[2];
+    };
+
     void Triangle3D(cg::Vertex* vertices);
 
     class Scene {
@@ -105,16 +116,22 @@ namespace cg {
             std::vector<Mesh>& GetMeshes() { return meshes; }
             int GetAmountOfMeshes() const { return meshes.size(); }
 
+            std::vector<BVHNode>& GetBVHNodes() { return bvhNodes; }
+            int GetAmountOfBVHNodes() const { return bvhNodes.size(); }
+
             // Load a .ply 3d mesh.
             void LoadPly(std::string path);
 
             void LoadMesh(std::vector<cg::Vertex> vertices, std::vector<unsigned int> indices);
+
+            int ConvertTrianglesToBVH(cg::BVHNode rootNode);
         private:
             std::vector<Material> materials;
             std::vector<Sphere> spheres;
             std::vector<TriangleObject> triangles;
             std::vector<Box> boxes;
             std::vector<Mesh> meshes;
+            std::vector<BVHNode> bvhNodes;
     };
 }
 

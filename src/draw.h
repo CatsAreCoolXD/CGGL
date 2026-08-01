@@ -54,7 +54,7 @@ namespace cg {
     void Draw(cg::Texture& tex, cg::Vec2f origin, cg::Vec2f size, int flags = 0);
 
     class Scene;
-    void Draw(cg::Scene& scene, cg::Vec3f cameraPos);
+    void Draw(cg::Scene& scene, cg::Vec3f cameraPos, cg::Vec3f cameraLookAt);
 
     void DrawFullscreenShader(cg::Shader* shader, cg::Texture* tex = nullptr);
 

@@ -43,6 +43,14 @@ namespace cg {
             }
         }
 
+        cg::Vec3f GetCameraPos() {
+            return cameraPos;
+        }
+
+        cg::Vec3f GetCameraLookAt() {
+            return cameraLookAt;
+        }
+
         void QueueClear(){
             clearQueued = true;
         }
@@ -171,7 +179,7 @@ namespace cg {
             if (cg::GetMouseButtonUp(MOUSE_BUTTON_RIGHT)) frame = 0;
             if (cg::IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
                 enableFreeCam = true;
-                cg::Raytracing::ClearFrameBuffers();
+                cg::Raytracing::QueueClear();
             } else enableFreeCam = false;
 
             constexpr double sens = 1.f;
@@ -207,6 +215,36 @@ namespace cg {
             }
         }
 
+        void LoadScene(cg::Scene& scene){
+            raytracingShader.Use();
+
+            srand(time(NULL));
+            raytracingShader.SetArray(scene.GetAmountOfMaterials() * sizeof(Material), scene.GetMaterials().data(), 0u);
+            raytracingShader.SetArray(scene.GetAmountOfSpheres() * sizeof(Sphere), scene.GetSpheres().data(), 1u);
+            raytracingShader.SetArray(scene.GetAmountOfTriangles() * sizeof(TriangleObject), scene.GetTriangles().data(), 2u);
+            raytracingShader.SetArray(scene.GetAmountOfBoxes() * sizeof(Box), scene.GetBoxes().data(), 3u);
+            raytracingShader.SetArray(scene.GetAmountOfMeshes() * sizeof(Mesh), scene.GetMeshes().data(), 4u);
+            raytracingShader.SetArray(scene.GetAmountOfBVHNodes() * sizeof(BVHNode), scene.GetBVHNodes().data(), 5u);
+
+            raytracingShader.SetInt("amountOfMaterials", scene.GetAmountOfMaterials());
+            raytracingShader.SetInt("amountOfSpheres", scene.GetAmountOfSpheres());
+            raytracingShader.SetInt("amountOfTriangles", scene.GetAmountOfTriangles());
+            raytracingShader.SetInt("amountOfBoxes", scene.GetAmountOfBoxes());
+            raytracingShader.SetInt("amountOfMeshes", scene.GetAmountOfMeshes());
+            raytracingShader.SetInt("amountOfBVHNodes", scene.GetAmountOfBVHNodes());
+
+            raytracingShader.SetInt("raysPerPixel", raysPerPixel);
+            raytracingShader.SetInt("maxBounces", maxBounces);
+            raytracingShader.SetFloat("blurStrength", blurStrength);
+
+            cg::Vec2i windowSize = cg::GetWindowSize();
+            raytracingShader.SetInt("frame", 0);
+            raytracingShader.SetFloats("resolution", cg::Vec2f(cg::GetWindowSize()));
+            raytracingShader.SetFloats("cameraPos", cg::Vec3f(cameraPos));
+            raytracingShader.SetFloats("cameraLookAt", cg::Vec3f(cameraLookAt));
+            raytracingShader.SetBool("enableFrameAccumulation", !enableFreeCam);
+        }
+
         void RayTrace(cg::Scene& scene){
             if (clearQueued){
                 clearQueued = false;
@@ -224,29 +262,17 @@ namespace cg {
             }
 
             raytracingShader.Use();
-
-            srand(time(NULL));
-            raytracingShader.SetArray(scene.GetAmountOfMaterials() * sizeof(Material), scene.GetMaterials().data(), 0u);
             raytracingShader.SetInt("amountOfMaterials", scene.GetAmountOfMaterials());
-
-            raytracingShader.SetArray(scene.GetAmountOfSpheres() * sizeof(Sphere), scene.GetSpheres().data(), 1u);
             raytracingShader.SetInt("amountOfSpheres", scene.GetAmountOfSpheres());
-
-            raytracingShader.SetArray(scene.GetAmountOfTriangles() * sizeof(TriangleObject), scene.GetTriangles().data(), 2u);
             raytracingShader.SetInt("amountOfTriangles", scene.GetAmountOfTriangles());
-
-            raytracingShader.SetArray(scene.GetAmountOfBoxes() * sizeof(Box), scene.GetBoxes().data(), 3u);
             raytracingShader.SetInt("amountOfBoxes", scene.GetAmountOfBoxes());
-
-            raytracingShader.SetArray(scene.GetAmountOfMeshes() * sizeof(Mesh), scene.GetMeshes().data(), 4u);
             raytracingShader.SetInt("amountOfMeshes", scene.GetAmountOfMeshes());
-
+            raytracingShader.SetInt("amountOfBVHNodes", scene.GetAmountOfBVHNodes());
+            
+            raytracingShader.SetInt("frame", frame);
             raytracingShader.SetInt("raysPerPixel", raysPerPixel);
             raytracingShader.SetInt("maxBounces", maxBounces);
             raytracingShader.SetFloat("blurStrength", blurStrength);
-
-            cg::Vec2i windowSize = cg::GetWindowSize();
-            raytracingShader.SetInt("frame", frame);
             raytracingShader.SetFloats("resolution", cg::Vec2f(cg::GetWindowSize()));
             raytracingShader.SetFloats("cameraPos", cg::Vec3f(cameraPos));
             raytracingShader.SetFloats("cameraLookAt", cg::Vec3f(cameraLookAt));

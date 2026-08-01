@@ -170,4 +170,7 @@ namespace cg {
     void Shader::SetTexture(cg::Texture* tex) const {
         glBindTexture(GL_TEXTURE_2D, tex->textureId);
     }
+    void Shader::SetMatrix4x4(std::string name, glm::mat4& mat) const {
+        glUniformMatrix4fv(glGetUniformLocation(id, name.c_str()), 1, GL_FALSE, glm::value_ptr(mat));
+    }
 }
