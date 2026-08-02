@@ -341,7 +341,7 @@ namespace cg {
         triangles.push_back(t);
     }
 
-    void Scene::LoadPly(std::string path){
+    void Scene::LoadPly(std::string path, float smoothness, cg::Vec3f pos, cg::Vec3f scale, int bvhDepthLimit){
         happly::PLYData plyIn(path);
 
         std::vector<std::array<double, 3>> meshVertexPositions = plyIn.getVertexPositions();
@@ -375,12 +375,52 @@ namespace cg {
             }
         }
 
-        Scene::LoadMesh(vertices, indices);
+        Scene::LoadMesh(vertices, indices, smoothness, pos, scale, bvhDepthLimit);
     }
 
-    void Scene::LoadMesh(std::vector<cg::Vertex> vertices, std::vector<unsigned int> indices){
+    void GrowBoundingBox(cg::BVHNode& node, cg::Vec3f v){
+        cg::Vec3f pos(node.pos[0], node.pos[1], node.pos[2]), size(node.size[0], node.size[1], node.size[2]);
+        cg::Vec3f min(pos - size), max(pos + size);
+
+        // First time the bounding box is growing.
+        if (min == cg::Vec3f(0,0,0) && max == cg::Vec3f(0,0,0) && pos == cg::Vec3f(0,0,0)) {
+            pos = v;
+            size = cg::Vec3f(0.1,0.1,0.1); // Always have a little bit of size
+        } else {
+            if (v.x < min.x) min.x = v.x;
+            if (v.y < min.y) min.y = v.y;
+            if (v.z < min.z) min.z = v.z;
+            
+            if (v.x > max.x) max.x = v.x;
+            if (v.y > max.y) max.y = v.y;
+            if (v.z > max.z) max.z = v.z;
+
+            size = (max - min) / 2.f;
+            pos = (max + min) / 2.f;
+        }
+
+        node.size[0] = size.x;
+        node.size[1] = size.y;
+        node.size[2] = size.z;
+
+        node.pos[0] = pos.x;
+        node.pos[1] = pos.y;
+        node.pos[2] = pos.z;
+    }
+
+    void GrowBoundingBox(cg::BVHNode& node, float* p){
+        cg::Vec3f pos(p[0], p[1], p[2]);
+        GrowBoundingBox(node, pos);
+    }
+
+    void Scene::LoadMesh(std::vector<cg::Vertex> vertices, std::vector<unsigned int> indices, float smoothness, cg::Vec3f pos, cg::Vec3f scale, int bvhDepthLimit){
         Mesh mesh;
         mesh.triangleIndexStart = triangles.size();
+
+        for (cg::Vertex& v : vertices){
+            v.pos = v.pos * scale;
+            v.pos = v.pos + pos;
+        }
 
         std::cout << "Loading " << indices.size() / 3 << " triangles\n";
         for (int i = 0; i < indices.size() / 3; i++){
@@ -395,47 +435,107 @@ namespace cg {
             col = col + vertices[v2].color / 255.f;
             col = col / 3;
 
-            Scene::CreateTriangle(vertices[v0].pos, vertices[v1].pos, vertices[v2].pos, Scene::CreateMaterial(col));
+            Scene::CreateTriangle(vertices[v0].pos, vertices[v1].pos, vertices[v2].pos, Scene::CreateMaterial(col, cg::Color(), smoothness));
         }
-        std::cout << "Loaded Triangles" << std::endl;
+        std::cout << "Loaded " << triangles.size() - mesh.triangleIndexStart << " Triangles" << std::endl;
 
-        BVHNode rootNode;
+        BVHNode rootNode{};
         
-        cg::Vec3f min = vertices[0].pos;
-        cg::Vec3f max = vertices[0].pos;
         for (cg::Vertex& v : vertices){
-            if (v.pos.x < min.x) min.x = v.pos.x;
-            if (v.pos.y < min.y) min.y = v.pos.y;
-            if (v.pos.z < min.z) min.z = v.pos.z;
-            
-            if (v.pos.x > max.x) max.x = v.pos.x;
-            if (v.pos.y > max.y) max.y = v.pos.y;
-            if (v.pos.z > max.z) max.z = v.pos.z;
+            cg::GrowBoundingBox(rootNode, v.pos);
         }
 
-        cg::Vec3f boxSize = cg::Vec3f(max - min) / 2.f;
-        rootNode.size[0] = boxSize.x;
-        rootNode.size[1] = boxSize.y;
-        rootNode.size[2] = boxSize.z;
-
-        cg::Vec3f boxPos = cg::Vec3f(min + max) / 2.f;
-        rootNode.pos[0] = boxPos.x;
-        rootNode.pos[1] = boxPos.y;
-        rootNode.pos[2] = boxPos.z;
-
-        mesh.boundingBoxIndex = Scene::ConvertTrianglesToBVH(rootNode);
         mesh.triangleIndexEnd = triangles.size();
 
-        rootNode.childA = 1;
-        rootNode.childB = 1;
-        rootNode.trianglesStart = 0;//mesh.triangleIndexStart;
+        rootNode.childIndex = 1;
+        rootNode.trianglesStart = mesh.triangleIndexStart;
         rootNode.trianglesEnd = mesh.triangleIndexEnd;
 
-        bvhNodes.push_back(rootNode);
+        mesh.boundingBoxIndex = Scene::ConvertTrianglesToBVH(rootNode, bvhDepthLimit);
         meshes.push_back(mesh);
     }
 
-    int Scene::ConvertTrianglesToBVH(BVHNode rootNode){
-        return bvhNodes.size();
+    cg::Vec3f GetTriangleCenter(cg::TriangleObject triangle){
+        return (cg::Vec3f(triangle.p1[0], triangle.p1[1], triangle.p1[2]) + cg::Vec3f(triangle.p2[0], triangle.p2[1], triangle.p2[2]) + cg::Vec3f(triangle.p3[0], triangle.p3[1], triangle.p3[2])) / 3.f;
+    }
+
+    void Scene::Split(BVHNode& parent, int maxDepth){
+        if (maxDepth <= 0) return;
+
+        BVHNode childA{}, childB{};
+
+        childA.trianglesStart = parent.trianglesStart;
+        childB.trianglesStart = parent.trianglesStart;
+
+        childA.trianglesEnd = parent.trianglesStart;
+        childB.trianglesEnd = parent.trianglesStart;
+
+        int longestAxis = parent.size[0] > parent.size[1] ? 0 : 1;
+        if (parent.size[2] > parent.size[longestAxis]) longestAxis = 2;
+
+        for (int i = parent.trianglesStart; i < parent.trianglesEnd; i++){
+            bool triangleIsInFirstHalf = cg::GetTriangleCenter(triangles[i])[longestAxis] < parent.pos[longestAxis];
+            BVHNode& node = triangleIsInFirstHalf ? childA : childB;
+            node.trianglesEnd++;
+
+            cg::GrowBoundingBox(node, triangles[i].p1);
+            cg::GrowBoundingBox(node, triangles[i].p2);
+            cg::GrowBoundingBox(node, triangles[i].p3);
+
+            // Sort triangle into it's corresponding half
+            if (triangleIsInFirstHalf){
+                std::swap(triangles[i], triangles[node.trianglesEnd - 1]);
+
+                // Increase triangle index of child b when adding triangles into child a
+                childB.trianglesStart++;
+                childB.trianglesEnd++;
+            }
+        }
+
+        int childIndex = bvhNodes.size();
+        parent.childIndex = childIndex;
+
+        bvhNodes.push_back(childA);
+        bvhNodes.push_back(childB);
+
+        const int minTriangleAmount = 5;
+        int childAIndex = childIndex + 0;
+        int childBIndex = childIndex + 1;
+
+        if (childA.trianglesEnd - childA.trianglesStart > minTriangleAmount) Scene::Split(bvhNodes[childAIndex], maxDepth - 1);
+        if (childB.trianglesEnd - childB.trianglesStart > minTriangleAmount) Scene::Split(bvhNodes[childBIndex], maxDepth - 1);
+    }
+
+    int Scene::ConvertTrianglesToBVH(BVHNode& rootNode, int depthLimit){
+        int i = bvhNodes.size();
+        bvhNodes.push_back(rootNode);
+
+        depthLimit = std::clamp(depthLimit, 0, 64);
+
+        Scene::Split(bvhNodes[i], depthLimit);
+
+        std::cout << "---- BVH INFORMATION ----\n";
+        std::cout << "BVH Nodes: " << bvhNodes.size() - i << std::endl; 
+        int leafTriangleSum = 0;
+        cg::Vec2i leafTriangleCounts(INT_MAX, INT_MIN);
+        int leafNodesCount = 0;
+        for (int j = i; j < bvhNodes.size(); j++){
+            BVHNode& node = bvhNodes[j];
+            int trianglesCount = node.trianglesEnd - node.trianglesStart;
+            if (node.childIndex == 0) {
+                leafTriangleSum += trianglesCount;
+                leafNodesCount++;
+                leafTriangleCounts.x = std::min(leafTriangleCounts.x, trianglesCount);
+                leafTriangleCounts.y = std::max(leafTriangleCounts.y, trianglesCount);
+            }
+        }
+        std::cout << "Leaf nodes: " << leafNodesCount << std::endl;
+        std::cout << "Max Depth: " << depthLimit << std::endl;
+        std::cout << "Minimum of " << leafTriangleCounts.x << " triangles" << std::endl;
+        std::cout << "Maximum of " << leafTriangleCounts.y << " triangles" << std::endl;
+        std::cout << "Average of " << leafTriangleSum / leafNodesCount << " triangles " << std::endl;
+        std::cout << "-------------------------\n";
+
+        return i;
     }
 }

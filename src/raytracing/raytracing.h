@@ -33,7 +33,7 @@ namespace cg {
             float blurStrength = 0.f;
             int frame = 0;
 
-            cg::Vec3d cameraPos(30,15,0), cameraLookAt(0,0,0);
+            cg::Vec3d cameraPos(-15,5,0), cameraLookAt(0,0,0);
             double flySpeed = 1.0;
 
             bool enableFreeCam = true, clearQueued = false, framebufferResizeQueued = false;
@@ -174,6 +174,20 @@ namespace cg {
             frame = 0;
         }
 
+        void SetCameraPos(cg::Vec3d pos){
+            if (pos == cameraPos) return;
+            cameraPos = pos;
+            cg::Raytracing::ClearFrameBuffers();
+            frame = 0;
+        }
+
+        void SetCameraLookAt(cg::Vec3d lookAt){
+            if (lookAt == cameraLookAt) return;
+            cameraLookAt = lookAt;
+            cg::Raytracing::ClearFrameBuffers();
+            frame = 0;
+        }
+
         void UpdateFreecam()
         {
             if (cg::GetMouseButtonUp(MOUSE_BUTTON_RIGHT)) frame = 0;
@@ -183,7 +197,7 @@ namespace cg {
             } else enableFreeCam = false;
 
             constexpr double sens = 1.f;
-            flySpeed += cg::GetMouseScroll().y;
+            flySpeed = std::max(0.0, flySpeed + cg::GetMouseScroll().y);
 
             static cg::Vec2d previousMousePos;
             static cg::Vec2d mouseAccum;

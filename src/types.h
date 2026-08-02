@@ -113,6 +113,7 @@ namespace cg {
         public:
             Vec3() : x(0), y(0), z(0) {}
             Vec3(T x, T y, T z) : x(x), y(y), z(z) {}
+            Vec3(T v) : x(v), y(v), z(v) {}
 
             T x, y, z;
             T &r = x, &g = y, &b = z;
@@ -141,6 +142,14 @@ namespace cg {
             template<typename U>
             Vec3<T> Cross(Vec3<U> other){
                 return Vec3<T>(y * (T)other.z - b * (T)other.y, z * (T)other.x - x * (T)other.z, x * (T)other.y - y * (T)other.x);
+            }
+
+            float& operator[](const int i){
+                if (i == 0) return x;
+                if (i == 1) return y;
+                if (i == 2) return z;
+                throw std::runtime_error((std::string)"operator[] out of range: " + std::to_string(i));
+                return x;
             }
 
             Vec3<T>& operator=(const Vec3<T>& other) {
@@ -201,7 +210,7 @@ namespace cg {
 
     template<typename T>
     Vec3<T> operator*(Vec3<T> l, Vec3<T> r) {
-        return Vec3<T>(l.x * r.x, l.y * r.y, l.z / r.z);
+        return Vec3<T>(l.x * r.x, l.y * r.y, l.z * r.z);
     }
 
     using Vec3f = Vec3<float>;

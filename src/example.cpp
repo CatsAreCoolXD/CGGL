@@ -41,7 +41,7 @@ int main(){
 
     cg::PushQuality(4);
 
-    int raysPerPixel = 5, maxBounces = 5;
+    int raysPerPixel = 1, maxBounces = 3;
     float blurStrength = 0.5f, smoothness = 0.f;
 
     cg::Scene scene;
@@ -53,9 +53,13 @@ int main(){
 
     //scene.CreateSphere(cg::Vec3f(0.f, -101.0f, 0.f), 100.f, scene.CreateMaterial(cg::Color(0.f, 1.f, 1.f))); // Cyan, big Sphere
 
-    scene.CreateSphere(cg::Vec3f(35.f, 30.f, 0.f), 10.f, scene.CreateMaterial(cg::Color(), cg::Color(1.f, 1.f, 1.f, 15.f))); // Sun
+    scene.CreateSphere(cg::Vec3f(50, 30.f, 0.f), 12.5f, scene.CreateMaterial(cg::Color(), cg::Color(1.f, 1.f, 1.f, 15.f))); // Sun
 
-    scene.LoadPly("src/models/tree.ply");
+    scene.LoadPly("src/models/dragon.ply", .75f, cg::Vec3f(6.5f, 1.5f, 0), cg::Vec3f(0.5f,0.5f,0.5f), 16);
+    scene.LoadPly("src/models/tree.ply", 0.f, cg::Vec3f(0, 0, 0), cg::Vec3f(1,1,1), 16);
+
+    cg::Raytracing::SetCameraLookAt(cg::Vec3f());
+    cg::Raytracing::SetCameraPos(cg::Vec3f(30, 10, 0));
 
     cg::Raytracing::LoadScene(scene);
 

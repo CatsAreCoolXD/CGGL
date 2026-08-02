@@ -79,13 +79,13 @@ namespace cg {
 
     struct BVHNode {
         float pos[3];
-        int childA;
-        float size[3];
-        int childB;
+        int childIndex;
 
+        float size[3];
         int trianglesStart;
+
         int trianglesEnd;
-        int _offset2[2];
+        int _offset[3];
     };
 
     void Triangle3D(cg::Vertex* vertices);
@@ -120,11 +120,12 @@ namespace cg {
             int GetAmountOfBVHNodes() const { return bvhNodes.size(); }
 
             // Load a .ply 3d mesh.
-            void LoadPly(std::string path);
+            void LoadPly(std::string path, float smoothness = 0.f, cg::Vec3f pos = cg::Vec3f(), cg::Vec3f scale = cg::Vec3f(1,1,1), int bvhDepthLimit = 24);
 
-            void LoadMesh(std::vector<cg::Vertex> vertices, std::vector<unsigned int> indices);
+            void LoadMesh(std::vector<cg::Vertex> vertices, std::vector<unsigned int> indices, float smoothness = 0.f, cg::Vec3f pos = cg::Vec3f(), cg::Vec3f scale = cg::Vec3(1,1,1), int bvhDepthLimit = 24);
 
-            int ConvertTrianglesToBVH(cg::BVHNode rootNode);
+            // You should fiddle around a bit with the depthLimit to get the best performance
+            int ConvertTrianglesToBVH(cg::BVHNode& rootNode, int depthLimit = 24);
         private:
             std::vector<Material> materials;
             std::vector<Sphere> spheres;
@@ -132,6 +133,8 @@ namespace cg {
             std::vector<Box> boxes;
             std::vector<Mesh> meshes;
             std::vector<BVHNode> bvhNodes;
+
+            void Split(BVHNode& parent, int maxDepth);
     };
 }
 

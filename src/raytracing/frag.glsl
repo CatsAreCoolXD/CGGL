@@ -51,9 +51,8 @@ struct Mesh {
 
 struct BVHNode {
     vec3 pos;
-    int childA;
+    int childIndex;
     vec3 size;
-    int childB;
     int trianglesStart;
     int trianglesEnd;
 };
@@ -288,18 +287,46 @@ void TestTriangles(in Ray ray, int start, int end, inout IntersectInfo result){
     }
 }
 
-void RayBVHIntersection(in Ray ray, inout HitInfo result, int nodeIndex){
-    RayBoxIntersection(ray, nodes[nodeIndex], result);
+bool RayBVHIntersection(in Ray ray, in BVHNode node, inout HitInfo result){
+    RayBoxIntersection(ray, node, result);
+    return result.hit;
 }
 
+// Thanks to Sebastian Lague for the iterative approach!
 void TestMeshes(in Ray ray, inout IntersectInfo result){
     result.hit = false;
     result.dst = INF;
+
     for (int i = 0; i < amountOfMeshes; i++){
-        HitInfo boundingBoxHitInfo;
-        RayBVHIntersection(ray, boundingBoxHitInfo, meshes[i].boundingBoxIndex);
-        if (boundingBoxHitInfo.hit){
-            TestTriangles(ray, nodes[meshes[i].boundingBoxIndex].trianglesStart, nodes[meshes[i].boundingBoxIndex].trianglesEnd, result);
+        int nodeStack[64]; // The array size is the maximum depth of the BVH
+        int stackIndex = 0;
+        nodeStack[stackIndex++] = meshes[i].boundingBoxIndex;
+        while (stackIndex > 0){
+            BVHNode node = nodes[nodeStack[--stackIndex]];
+            HitInfo bvhHitInfo;
+            bvhHitInfo.hit = false;
+            bvhHitInfo.dst = INF;
+            if (RayBVHIntersection(ray, node, bvhHitInfo) && bvhHitInfo.dst < result.dst){
+                if (node.childIndex == 0) { // Leaf node, has no children
+                    IntersectInfo triangleHitResults;
+                    TestTriangles(ray, node.trianglesStart, node.trianglesEnd, triangleHitResults);
+                    if (triangleHitResults.hit && triangleHitResults.dst < result.dst) result = triangleHitResults;
+                } else { // Test children
+                    HitInfo hitChildA;
+                    HitInfo hitChildB;
+
+                    RayBVHIntersection(ray, nodes[node.childIndex + 0], hitChildA);
+                    RayBVHIntersection(ray, nodes[node.childIndex + 1], hitChildB);
+
+                    if (hitChildA.dst < hitChildB.dst){
+                        if (hitChildB.hit && hitChildB.dst < result.dst) nodeStack[stackIndex++] = node.childIndex + 1;
+                        if (hitChildA.dst < result.dst) nodeStack[stackIndex++] = node.childIndex + 0;
+                    } else {
+                        if (hitChildA.hit && hitChildA.dst < result.dst) nodeStack[stackIndex++] = node.childIndex + 0;
+                        if (hitChildB.dst < result.dst) nodeStack[stackIndex++] = node.childIndex + 1;
+                    }
+                }
+            }
         }
     }
 }
@@ -360,6 +387,7 @@ vec3 RayTrace(in Ray ray, inout uint seed){
 }
 
 vec3 GetPixelColor(){
+    //return nodes[1].size;
     // Thanks to myself 6 months ago for creating this camera code
     vec2 uv = (gl_FragCoord.xy-.5*resolution)/resolution.y;
 
