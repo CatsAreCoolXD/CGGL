@@ -41,8 +41,9 @@ int main(){
 
     cg::PushQuality(4);
 
-    int raysPerPixel = 1, maxBounces = 3;
+    int raysPerPixel = 1, maxBounces = 3, passesPerFrame = 1;
     float blurStrength = 0.5f, smoothness = 0.f;
+    bool enableFrameAccumulation = false;
 
     cg::Scene scene;
 
@@ -55,8 +56,9 @@ int main(){
 
     scene.CreateSphere(cg::Vec3f(50, 30.f, 0.f), 12.5f, scene.CreateMaterial(cg::Color(), cg::Color(1.f, 1.f, 1.f, 15.f))); // Sun
 
-    scene.LoadPly("src/models/dragon.ply", .75f, cg::Vec3f(6.5f, 1.5f, 0), cg::Vec3f(0.5f,0.5f,0.5f), 16);
-    scene.LoadPly("src/models/tree.ply", 0.f, cg::Vec3f(0, 0, 0), cg::Vec3f(1,1,1), 16);
+    cg::Object dragon = scene.LoadPly("src/models/dragon.ply", .0f,
+        cg::Transform(cg::Vec3f(6.5f, 1.5f, 0), cg::Vec3f(0.f, 0.5f, 0.f), cg::Vec3f(2.f)), 16);
+    scene.LoadPly("src/models/tree.ply", 0.f, cg::Transform(), 2);
 
     cg::Raytracing::SetCameraLookAt(cg::Vec3f());
     cg::Raytracing::SetCameraPos(cg::Vec3f(30, 10, 0));
@@ -64,12 +66,19 @@ int main(){
     cg::Raytracing::LoadScene(scene);
 
     while (cg::WindowIsOpen()){
+        double deltaTime = cg::GetDeltatime();
+
         cg::Raytracing::UpdateFreecam();
+        //dragon.Rotate(cg::Vec3f(0.f, deltaTime, 0.f));
+        //dragon.Move(cg::Vec3f(deltaTime, 0.f, 0.f));
         if (cg::IsKeyUp(KEY_SPACE)) {
             cg::Raytracing::SetRaysPerPixels(raysPerPixel);
             cg::Raytracing::SetMaxBounces(maxBounces);
             cg::Raytracing::SetBlurStrength(blurStrength);
+            cg::Raytracing::SetPassesPerFrame(passesPerFrame);
+            cg::Raytracing::ToggleFrameAccumulation(enableFrameAccumulation);
 
+            //cg::Raytracing::LoadScene(scene);
             cg::Raytracing::RayTrace(scene);
         } else {
             cg::Draw(scene, cg::Raytracing::GetCameraPos(), cg::Raytracing::GetCameraLookAt());
@@ -85,7 +94,9 @@ int main(){
 
         cg::GUISlider("Rays Per Pixel", raysPerPixel, 0, 50);
         cg::GUISlider("Max Bounces", maxBounces, 0, 100);
+        cg::GUISlider("Passes Per Frame", passesPerFrame, 1, 10);
         cg::GUISlider("Blur Strength", blurStrength, 0.f, 100.f);
+        cg::GUICheckBox("Enable Frame Accumulation", enableFrameAccumulation);
         if (cg::GUIButton("Reset Accumulation")) cg::Raytracing::QueueClear();
         if (cg::GUIButton("Export Image")) cg::Raytracing::ExportImage("image.png");
         cg::GUIText("Press SPACE to stop raytracing", FLAG_USE_SECONDARY_COLOR);
@@ -95,6 +106,8 @@ int main(){
         cg::Draw();
         cg::NewFrame();
     }
+
+    cg::Raytracing::Quit();
 
     cg::Terminate();
 

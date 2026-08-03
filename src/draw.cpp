@@ -4,6 +4,7 @@
 #include "shape.h"
 #include "input.h"
 #include "text.h"
+#include "scene.h"
 
 #include <iostream>
 
@@ -542,7 +543,7 @@ namespace cg {
             glTexImage2D(GL_TEXTURE_2D, 0, colorType, width, height, 0, colorType, GL_UNSIGNED_BYTE, data);
             glGenerateMipmap(GL_TEXTURE_2D);
         } else {
-            throw std::runtime_error("Failed to load texture. Ensure path is correct.");
+            throw std::runtime_error("Failed to load texture: " + (std::string)path + ". Ensure path is correct.");
         }
 
         size.x = width;

@@ -7,6 +7,7 @@
 #include "../shape.h"
 #include "../draw.h"
 #include "../window.h"
+#include "../scene.h"
 
 #include <vector>
 
@@ -14,8 +15,6 @@
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "../include/stb_image_write.h"
-
-// Todo: Make Ray Tracing work with window resizing
 
 namespace cg {
     GLFWwindow* GetWindow();
@@ -29,14 +28,14 @@ namespace cg {
 
             GLuint VAO, VBO, EBO;
 
-            int raysPerPixel = 5, maxBounces = 5;
+            int raysPerPixel = 5, maxBounces = 5, passesPerFrame = 1;
             float blurStrength = 0.f;
             int frame = 0;
 
             cg::Vec3d cameraPos(-15,5,0), cameraLookAt(0,0,0);
             double flySpeed = 1.0;
 
-            bool enableFreeCam = true, clearQueued = false, framebufferResizeQueued = false;
+            bool enableFreeCam = true, clearQueued = false, framebufferResizeQueued = false, enableFrameAccumulation = false;
 
             void window_resize_callback(GLFWwindow* window, int width, int height){
                 framebufferResizeQueued = true;
@@ -167,6 +166,13 @@ namespace cg {
             frame = 0;
         }
 
+        void SetPassesPerFrame(int value) {
+            if (value == passesPerFrame) return;
+            passesPerFrame = std::max(value, 1);
+            ClearFrameBuffers();
+            frame = 0;
+        }
+
         void SetBlurStrength(float value){
             if (value == blurStrength) return;
             blurStrength = value;
@@ -188,12 +194,16 @@ namespace cg {
             frame = 0;
         }
 
+        void ToggleFrameAccumulation(bool value) {
+            enableFrameAccumulation = value;
+        }
+
         void UpdateFreecam()
         {
             if (cg::GetMouseButtonUp(MOUSE_BUTTON_RIGHT)) frame = 0;
             if (cg::IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
                 enableFreeCam = true;
-                cg::Raytracing::QueueClear();
+                if (enableFrameAccumulation) cg::Raytracing::QueueClear();
             } else enableFreeCam = false;
 
             constexpr double sens = 1.f;
@@ -229,16 +239,18 @@ namespace cg {
             }
         }
 
+        /* RENDERING */
+
         void LoadScene(cg::Scene& scene){
             raytracingShader.Use();
 
             srand(time(NULL));
-            raytracingShader.SetArray(scene.GetAmountOfMaterials() * sizeof(Material), scene.GetMaterials().data(), 0u);
-            raytracingShader.SetArray(scene.GetAmountOfSpheres() * sizeof(Sphere), scene.GetSpheres().data(), 1u);
-            raytracingShader.SetArray(scene.GetAmountOfTriangles() * sizeof(TriangleObject), scene.GetTriangles().data(), 2u);
-            raytracingShader.SetArray(scene.GetAmountOfBoxes() * sizeof(Box), scene.GetBoxes().data(), 3u);
-            raytracingShader.SetArray(scene.GetAmountOfMeshes() * sizeof(Mesh), scene.GetMeshes().data(), 4u);
-            raytracingShader.SetArray(scene.GetAmountOfBVHNodes() * sizeof(BVHNode), scene.GetBVHNodes().data(), 5u);
+            raytracingShader.SetBuffer(scene.GetAmountOfMaterials() * sizeof(Material), scene.GetMaterials().data(), 0u);
+            raytracingShader.SetBuffer(scene.GetAmountOfSpheres() * sizeof(Sphere), scene.GetSpheres().data(), 1u);
+            raytracingShader.SetBuffer(scene.GetAmountOfTriangles() * sizeof(TriangleObject), scene.GetTriangles().data(), 2u);
+            raytracingShader.SetBuffer(scene.GetAmountOfBoxes() * sizeof(Box), scene.GetBoxes().data(), 3u);
+            raytracingShader.SetBuffer(scene.GetAmountOfMeshes() * sizeof(Mesh), scene.GetMeshes().data(), 4u);
+            raytracingShader.SetBuffer(scene.GetAmountOfBVHNodes() * sizeof(BVHNode), scene.GetBVHNodes().data(), 5u);
 
             raytracingShader.SetInt("amountOfMaterials", scene.GetAmountOfMaterials());
             raytracingShader.SetInt("amountOfSpheres", scene.GetAmountOfSpheres());
@@ -256,11 +268,13 @@ namespace cg {
             raytracingShader.SetFloats("resolution", cg::Vec2f(cg::GetWindowSize()));
             raytracingShader.SetFloats("cameraPos", cg::Vec3f(cameraPos));
             raytracingShader.SetFloats("cameraLookAt", cg::Vec3f(cameraLookAt));
-            raytracingShader.SetBool("enableFrameAccumulation", !enableFreeCam);
+            raytracingShader.SetBool("enableFrameAccumulation", enableFrameAccumulation);
+
+            clearQueued = true;
         }
 
         void RayTrace(cg::Scene& scene){
-            if (clearQueued){
+            if (clearQueued || !enableFrameAccumulation){
                 clearQueued = false;
 
                 cg::Raytracing::ClearFrameBuffers();
@@ -275,78 +289,80 @@ namespace cg {
                 cg::Raytracing::ResetFrames();
             }
 
-            raytracingShader.Use();
-            raytracingShader.SetInt("amountOfMaterials", scene.GetAmountOfMaterials());
-            raytracingShader.SetInt("amountOfSpheres", scene.GetAmountOfSpheres());
-            raytracingShader.SetInt("amountOfTriangles", scene.GetAmountOfTriangles());
-            raytracingShader.SetInt("amountOfBoxes", scene.GetAmountOfBoxes());
-            raytracingShader.SetInt("amountOfMeshes", scene.GetAmountOfMeshes());
-            raytracingShader.SetInt("amountOfBVHNodes", scene.GetAmountOfBVHNodes());
-            
-            raytracingShader.SetInt("frame", frame);
-            raytracingShader.SetInt("raysPerPixel", raysPerPixel);
-            raytracingShader.SetInt("maxBounces", maxBounces);
-            raytracingShader.SetFloat("blurStrength", blurStrength);
-            raytracingShader.SetFloats("resolution", cg::Vec2f(cg::GetWindowSize()));
-            raytracingShader.SetFloats("cameraPos", cg::Vec3f(cameraPos));
-            raytracingShader.SetFloats("cameraLookAt", cg::Vec3f(cameraLookAt));
-            raytracingShader.SetBool("enableFrameAccumulation", !enableFreeCam);
+            for (int pass = 0; pass < passesPerFrame; pass++) {
+                raytracingShader.Use();
+                raytracingShader.SetInt("amountOfMaterials", scene.GetAmountOfMaterials());
+                raytracingShader.SetInt("amountOfSpheres", scene.GetAmountOfSpheres());
+                raytracingShader.SetInt("amountOfTriangles", scene.GetAmountOfTriangles());
+                raytracingShader.SetInt("amountOfBoxes", scene.GetAmountOfBoxes());
+                raytracingShader.SetInt("amountOfMeshes", scene.GetAmountOfMeshes());
+                raytracingShader.SetInt("amountOfBVHNodes", scene.GetAmountOfBVHNodes());
 
-            constexpr float vertices[12] = {
-                -1.f, -1.f, 0.f,
-                -1.f, 1.f, 0.f,
-                1.f, 1.f, 0.f,
-                1.f, -1.f, 0.f
-            };
+                raytracingShader.SetInt("frame", frame);
+                raytracingShader.SetInt("raysPerPixel", raysPerPixel);
+                raytracingShader.SetInt("maxBounces", maxBounces);
+                raytracingShader.SetFloat("blurStrength", blurStrength);
+                raytracingShader.SetFloats("resolution", cg::Vec2f(cg::GetWindowSize()));
+                raytracingShader.SetFloats("cameraPos", cg::Vec3f(cameraPos));
+                raytracingShader.SetFloats("cameraLookAt", cg::Vec3f(cameraLookAt));
+                raytracingShader.SetBool("enableFrameAccumulation", enableFrameAccumulation || pass > 0);
 
-            constexpr unsigned int indices[6] = {
-                0, 1, 2,
-                0, 3, 2
-            };
+                constexpr float vertices[12] = {
+                    -1.f, -1.f, 0.f,
+                    -1.f, 1.f, 0.f,
+                    1.f, 1.f, 0.f,
+                    1.f, -1.f, 0.f
+                };
 
-            int read = frame % 2;
-            int write = !read;
+                constexpr unsigned int indices[6] = {
+                    0, 1, 2,
+                    0, 3, 2
+                };
 
-            // Write into the frame buffer
-            glBindFramebuffer(GL_FRAMEBUFFER, frameBuffers[write]);
-            glClearColor(0.1f, 0.1f, 0.1f, 1.f);
-            glClear(GL_COLOR_BUFFER_BIT);
+                int read = frame % 2;
+                int write = !read;
 
-            glBindVertexArray(VAO);
-            glBindBuffer(GL_ARRAY_BUFFER, VBO);
-            glBufferData(GL_ARRAY_BUFFER, 12 * sizeof(float), vertices, GL_STATIC_DRAW);
+                // Write into the frame buffer
+                glBindFramebuffer(GL_FRAMEBUFFER, frameBuffers[write]);
+                glClearColor(0.1f, 0.1f, 0.1f, 1.f);
+                glClear(GL_COLOR_BUFFER_BIT);
 
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * sizeof(unsigned int), indices, GL_STATIC_DRAW);
+                glBindVertexArray(VAO);
+                glBindBuffer(GL_ARRAY_BUFFER, VBO);
+                glBufferData(GL_ARRAY_BUFFER, 12 * sizeof(float), vertices, GL_STATIC_DRAW);
 
-            // Tell OpenGL how it should interpret vertex data
-            // Positions
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-            glEnableVertexAttribArray(0);
+                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+                glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * sizeof(unsigned int), indices, GL_STATIC_DRAW);
 
-            // Bind Textures
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, accumTex[read]);
+                // Tell OpenGL how it should interpret vertex data
+                // Positions
+                glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+                glEnableVertexAttribArray(0);
 
-            glActiveTexture(GL_TEXTURE1);
-            glBindTexture(GL_TEXTURE_2D, noiseTex.textureId);
+                // Bind Textures
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, accumTex[read]);
 
-            // Draw Triangles
-            glBindVertexArray(VAO);
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+                glActiveTexture(GL_TEXTURE1);
+                glBindTexture(GL_TEXTURE_2D, noiseTex.textureId);
 
-            // Unbind frame buffer
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+                // Draw Triangles
+                glBindVertexArray(VAO);
+                glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-            tex.textureId = accumTex[write];
-            cg::PushNewTriangleBuffer();
-            cg::Draw(tex, FLAG_NO_BORDER); // Draw a quad with the texture
+                // Unbind frame buffer
+                glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-            // Unbind textures
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, 0);
+                tex.textureId = accumTex[write];
+                cg::PushNewTriangleBuffer();
+                cg::Draw(tex, FLAG_NO_BORDER); // Draw a quad with the texture
 
-            frame++;
+                // Unbind textures
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, 0);
+
+                frame++;
+            }
         }
 
         void ExportImage(std::string name){
@@ -354,12 +370,16 @@ namespace cg {
             std::vector<unsigned char> pixels(imageSize.x * imageSize.y * 4);
 
             int write = frame % 2;
-            int read = !read;
+            int read = !write;
 
             glBindFramebuffer(GL_FRAMEBUFFER, frameBuffers[read]);
             glReadPixels(0, 0, imageSize.x, imageSize.y, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
 
             stbi_write_png(name.c_str(), imageSize.x, imageSize.y, 4, pixels.data(), imageSize.x * 4);
+        }
+
+        void Quit() {
+            raytracingShader.DeleteShader();
         }
     }
 }

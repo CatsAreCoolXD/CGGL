@@ -6,6 +6,7 @@
 #include <string>
 #include <cmath>
 #include <vector>
+#include <map>
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
@@ -142,6 +143,10 @@ namespace cg {
             template<typename U>
             Vec3<T> Cross(Vec3<U> other){
                 return Vec3<T>(y * (T)other.z - b * (T)other.y, z * (T)other.x - x * (T)other.z, x * (T)other.y - y * (T)other.x);
+            }
+
+            Vec3<T> Abs() {
+                return Vec3<T>(abs(x), abs(y), abs(z));
             }
 
             float& operator[](const int i){
@@ -308,6 +313,7 @@ namespace cg {
         public:
             Shader() {}
             Shader(const char* vertexPath, const char* fragmentPath);
+            void DeleteShader();
 
             void CreateFromStrings(std::string vertexString, std::string fragmentString);
             void Create(const char* vertexPath, const char* fragmentPath);
@@ -322,9 +328,14 @@ namespace cg {
             void SetTexture(cg::Texture* tex) const;
 
             template <typename T>
-            void SetArray(size_t size, T* list, unsigned int binding){
-                GLuint ssbo;
-                glGenBuffers(1, &ssbo);
+            void SetBuffer(size_t size, T* list, unsigned int binding){
+                auto it = ssboMap.find(binding);
+                if (it == ssboMap.end()) {
+                    GLuint ssbo;
+                    glGenBuffers(1, &ssbo);
+                    ssboMap[binding] = ssbo;
+                }
+                GLuint ssbo = ssboMap[binding];
                 glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
                 glBufferData(GL_SHADER_STORAGE_BUFFER, size, list, GL_DYNAMIC_DRAW);
                 glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding, ssbo);
@@ -336,6 +347,7 @@ namespace cg {
             void CompileShader(const char* path, unsigned int& shaderId, int shaderType);
             void CompileShaderFromString(std::string code, unsigned int& shaderId, int shaderType);
             bool created = false;
+            std::map<unsigned int, GLuint> ssboMap;
     };
 
     float clamp(float v, float min, float max);

@@ -7,6 +7,7 @@
 #include "input.h"
 #include "text.h"
 #include "gui.h"
+#include "scene.h"
 
 // Include optional single-header files. (Todo, these are planned features)
 #ifdef CGGL_INCLUDE_REQUESTS

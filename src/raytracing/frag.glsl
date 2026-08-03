@@ -98,8 +98,7 @@ uniform vec2 resolution;
 #define INF 100000
 
 struct Ray {
-    vec3 origin, direction;
-    vec3 color;
+    vec3 origin, direction, invDir;
 };
 
 struct HitInfo {
@@ -121,7 +120,7 @@ float RandomValue(inout uint state)
 	state = state * 747796405 + 2891336453;
     uint result = ((state >> ((state >> 28) + 4)) ^ state) * 277803737;
     result = (result >> 22) ^ result;
-    return result / 4294967295.0;
+    return result * 2.3283064371 * pow(10.0, -10.0);
 }
 
 float RandomValueNormalDistribution(inout uint seed){
@@ -147,12 +146,10 @@ vec2 RandomPointInCircle(inout uint seed){
 
 // Box:             https://www.shadertoy.com/view/ld23DV
 void RayBoxIntersection(in Ray ray, in Box box, inout HitInfo hitInfo) {
-    hitInfo.hit = false;
-
     vec3 rd = ray.direction;
     vec3 ro = ray.origin - box.pos;
 
-    vec3 m = sign(rd)/max(abs(rd), 1e-8);
+    vec3 m = sign(rd)* abs(ray.invDir);
     vec3 n = m*ro;
     vec3 k = abs(m)*box.size;
 	
@@ -185,7 +182,7 @@ void RayBoxIntersection(in Ray ray, in BVHNode box, inout HitInfo hitInfo) {
     vec3 rd = ray.direction;
     vec3 ro = ray.origin - box.pos;
 
-    vec3 m = sign(rd)/max(abs(rd), 1e-8);
+    vec3 m = sign(rd)*abs(ray.invDir);
     vec3 n = m*ro;
     vec3 k = abs(m)*box.size;
 	
@@ -198,17 +195,8 @@ void RayBoxIntersection(in Ray ray, in BVHNode box, inout HitInfo hitInfo) {
     if (tN > tF || tF <= 0.) {
         hitInfo.hit = false;
     } else {
-        if (true) {
-            hitInfo.hit = true;
-        	hitInfo.normal = -sign(rd)*step(t1.yzx,t1.xyz)*step(t1.zxy,t1.xyz);
-            hitInfo.dst = tN;
-        } else if (true) { 
-            hitInfo.hit = true;
-        	hitInfo.normal = -sign(rd)*step(t1.yzx,t1.xyz)*step(t1.zxy,t1.xyz);
-            hitInfo.dst = tF;
-        } else {
-            hitInfo.hit = false;
-        }
+        hitInfo.hit = true;
+        hitInfo.dst = tN;
     }
 }
 
@@ -254,8 +242,8 @@ void RaySphereIntersection(in Sphere sphere, in Ray r, inout HitInfo hitInfo)
     {
         float s = sqrt(discriminant);
         // Distance to nearest intersection point (from quadratic formula)
-        float dstNear = max(0, (-b - s) / 2);
-        float dstFar = (-b + s) / 2;
+        float dstNear = max(0, (-b - s) * 0.5);
+        float dstFar = (-b + s) * 0.5;
 
         // Ignore intersections that occur behind the ray
         if (dstFar >= 0)
@@ -270,8 +258,6 @@ void RaySphereIntersection(in Sphere sphere, in Ray r, inout HitInfo hitInfo)
 /* SCENE INTERSECTION FUNCTIONS */
 
 void TestTriangles(in Ray ray, int start, int end, inout IntersectInfo result){
-    result.hit = false;
-    result.dst = INF;
     for (int i = start; i < end; i++){
         HitInfo info;
         RayTriangleIntersection(ray, triangles[i], info);
@@ -294,37 +280,29 @@ bool RayBVHIntersection(in Ray ray, in BVHNode node, inout HitInfo result){
 
 // Thanks to Sebastian Lague for the iterative approach!
 void TestMeshes(in Ray ray, inout IntersectInfo result){
-    result.hit = false;
-    result.dst = INF;
-
     for (int i = 0; i < amountOfMeshes; i++){
         int nodeStack[64]; // The array size is the maximum depth of the BVH
         int stackIndex = 0;
         nodeStack[stackIndex++] = meshes[i].boundingBoxIndex;
         while (stackIndex > 0){
             BVHNode node = nodes[nodeStack[--stackIndex]];
-            HitInfo bvhHitInfo;
-            bvhHitInfo.hit = false;
-            bvhHitInfo.dst = INF;
-            if (RayBVHIntersection(ray, node, bvhHitInfo) && bvhHitInfo.dst < result.dst){
-                if (node.childIndex == 0) { // Leaf node, has no children
-                    IntersectInfo triangleHitResults;
-                    TestTriangles(ray, node.trianglesStart, node.trianglesEnd, triangleHitResults);
-                    if (triangleHitResults.hit && triangleHitResults.dst < result.dst) result = triangleHitResults;
-                } else { // Test children
-                    HitInfo hitChildA;
-                    HitInfo hitChildB;
+            if (node.childIndex == 0) { // Leaf node, has no children
+                TestTriangles(ray, node.trianglesStart, node.trianglesEnd, result);
+            } else { // Test children
+                HitInfo hitChildA;
+                hitChildA.dst = INF;
+                HitInfo hitChildB;
+                hitChildB.dst = INF;
 
-                    RayBVHIntersection(ray, nodes[node.childIndex + 0], hitChildA);
-                    RayBVHIntersection(ray, nodes[node.childIndex + 1], hitChildB);
+                RayBVHIntersection(ray, nodes[node.childIndex + 0], hitChildA);
+                RayBVHIntersection(ray, nodes[node.childIndex + 1], hitChildB);
 
-                    if (hitChildA.dst < hitChildB.dst){
-                        if (hitChildB.hit && hitChildB.dst < result.dst) nodeStack[stackIndex++] = node.childIndex + 1;
-                        if (hitChildA.dst < result.dst) nodeStack[stackIndex++] = node.childIndex + 0;
-                    } else {
-                        if (hitChildA.hit && hitChildA.dst < result.dst) nodeStack[stackIndex++] = node.childIndex + 0;
-                        if (hitChildB.dst < result.dst) nodeStack[stackIndex++] = node.childIndex + 1;
-                    }
+                if (hitChildA.dst < hitChildB.dst){
+                    if (hitChildB.hit && hitChildB.dst < result.dst) nodeStack[stackIndex++] = node.childIndex + 1;
+                    if (hitChildA.dst < result.dst) nodeStack[stackIndex++] = node.childIndex + 0;
+                } else {
+                    if (hitChildA.hit && hitChildA.dst < result.dst) nodeStack[stackIndex++] = node.childIndex + 0;
+                    if (hitChildB.dst < result.dst) nodeStack[stackIndex++] = node.childIndex + 1;
                 }
             }
         }
@@ -332,8 +310,6 @@ void TestMeshes(in Ray ray, inout IntersectInfo result){
 }
 
 void TestSpheres(in Ray ray, inout IntersectInfo result){
-    result.hit = false;
-    result.dst = INF;
     for (int i = 0; i < amountOfSpheres; i++){
         HitInfo info;
         RaySphereIntersection(spheres[i], ray, info);
@@ -360,23 +336,33 @@ vec3 RayTrace(in Ray ray, inout uint seed){
     vec3 incomingLight = vec3(0.);
     vec3 color = vec3(1.);
     for (int bounce = 0; bounce <= maxBounces; bounce++){
-        IntersectInfo resultSpheres;
-        IntersectInfo resultMeshes;
-        TestSpheres(ray, resultSpheres);
-        TestMeshes(ray, resultMeshes);
+        IntersectInfo result;
+        result.hit = false;
+        result.dst = INF;
+        TestSpheres(ray, result);
+        TestMeshes(ray, result);
 
-        IntersectInfo result = (resultSpheres.dst < resultMeshes.dst && resultSpheres.hit) ? resultSpheres : resultMeshes;
         if (result.hit){
+            // If the ray hit a light source, add it's light to the ray. Also add the color of the material to the sum.
             vec3 emittedLight = materials[result.materialIndex].emissionColor.rgb * materials[result.materialIndex].emissionColor.a;
             incomingLight += color * emittedLight;
             color *= materials[result.materialIndex].color;
 
+            // Stop tracing if the light is already really low.
+            float p = max(color.r, max(color.g, color.b));
+            if (bounce > 3 && RandomValue(seed) < p) break;
+
             if (dot(result.normal, ray.direction) > 0) result.normal *= -1.0; // Normal must be wrong, so correct it
 
+            // Apply a small epsilon to make sure the ray doesn't hit the same object again
             ray.origin = result.intersectPos + result.normal * 0.001;
 
+            // Depending on the smoothness, bounce the ray back into the scene randomly or reflect it if the material is smooth.
             vec3 randomDirection = normalize(result.normal + RandomPointInsideSphere(seed));
-            ray.direction = mix(randomDirection, reflect(ray.direction, result.normal), materials[result.materialIndex].smoothness);
+            float smoothness = materials[result.materialIndex].smoothness;
+            if (smoothness == 0.0) ray.direction = randomDirection;
+            else ray.direction = mix(randomDirection, reflect(ray.direction, result.normal), smoothness);
+            ray.invDir = 1.0 / ray.direction;
         } else {
             if (bounce == 0) incomingLight = GetSkyColor(ray.direction);
             break;
@@ -387,7 +373,6 @@ vec3 RayTrace(in Ray ray, inout uint seed){
 }
 
 vec3 GetPixelColor(){
-    //return nodes[1].size;
     // Thanks to myself 6 months ago for creating this camera code
     vec2 uv = (gl_FragCoord.xy-.5*resolution)/resolution.y;
 
@@ -418,6 +403,7 @@ vec3 GetPixelColor(){
         vec3 jitteredViewpoint = i + r * jitter.x + u * jitter.y;
 
         ray.direction = normalize(jitteredViewpoint - ro);
+        ray.invDir = 1.0 / ray.direction;
 
         colorSum += RayTrace(ray, seed);
     }
