@@ -15,6 +15,9 @@ CGGL is an all-purpose C++ library, which currently has the following core featu
 - Input
 - GUI
 
+It also has the following optional features:
+- (in the future realtime) Raytracing
+
 #### What does CGGL stand for?
 
 Cat's Graphics & GUI Library. It started out as a library only meant for graphics and GUI, but that changed and I like the name so im keeping it.
