@@ -1,10 +1,10 @@
-#include "draw.h"
-#include "style.h"
-#include "window.h"
-#include "shape.h"
-#include "input.h"
-#include "text.h"
-#include "scene.h"
+#include "CGGL/draw.h"
+#include "CGGL/style.h"
+#include "CGGL/window.h"
+#include "CGGL/shape.h"
+#include "CGGL/input.h"
+#include "CGGL/text.h"
+#include "CGGL/scene.h"
 
 #include <iostream>
 
@@ -15,7 +15,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "include/stb_image.h"
+#include "CGGL/stb_image.h"
 
 /* 
 VERTEX SHADER

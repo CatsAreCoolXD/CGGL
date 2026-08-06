@@ -1,10 +1,9 @@
-#include "scene.h"
+#include "CGGL/scene.h"
+#include "CGGL/shape.h"
 
-#include "include/happly.h"
+#include "CGGL/happly.h"
 
 #include <GLFW/glfw3.h>
-
-#include "shape.h"
 
 namespace cg {
     namespace {

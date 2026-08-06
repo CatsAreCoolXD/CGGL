@@ -1,8 +1,8 @@
-#include "shape.h"
-#include "window.h"
-#include "style.h"
-#include "types.h"
-#include "draw.h"
+#include "CGGL/shape.h"
+#include "CGGL/window.h"
+#include "CGGL/style.h"
+#include "CGGL/types.h"
+#include "CGGL/draw.h"
 
 #include <iostream>
 #include <cassert>

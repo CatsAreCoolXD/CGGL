@@ -1,8 +1,8 @@
-#include "text.h"
-#include "types.h"
-#include "draw.h"
-#include "shape.h"
-#include "style.h"
+#include "CGGL/text.h"
+#include "CGGL/types.h"
+#include "CGGL/draw.h"
+#include "CGGL/shape.h"
+#include "CGGL/style.h"
 
 #include <iostream>
 

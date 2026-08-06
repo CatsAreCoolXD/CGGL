@@ -1,7 +1,7 @@
 #include <iostream>
 
 #define CGGL_INCLUDE_RAYTRACING
-#include "cggl.h"
+#include "../include/cggl.h"
 
 int main(){
     cg::WindowSettings settings;
@@ -88,7 +88,7 @@ int main(){
         cg::SetBackgroundColor(cg::Color(0,0,0,0));
         cg::GUIStartSection("Control Panel", cg::Vec2f(1500,20), cg::Vec2f(400, 1000));
         cg::SetBackgroundColor(cg::Color(2, 62, 138));
-        
+
         cg::PushFont(font);
         cg::GUIText("FPS: " + std::to_string((int)cg::GetAverageFPS()), FLAG_USE_SECONDARY_COLOR);
         cg::PopFont();

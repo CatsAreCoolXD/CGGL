@@ -1,14 +1,12 @@
 #include <iostream>
 #include <chrono>
-#include <vector>
 #include <string>
 
-#include "window.h"
-#include "types.h"
-#include "style.h"
-#include "draw.h"
-#include "input.h"
-#include "text.h"
+#include "CGGL/window.h"
+#include "CGGL/types.h"
+#include "CGGL/draw.h"
+#include "CGGL/input.h"
+#include "CGGL/text.h"
 
 namespace cg {
     namespace {

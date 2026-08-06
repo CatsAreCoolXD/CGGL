@@ -1,8 +1,8 @@
-#include "gui.h"
-#include "shape.h"
-#include "style.h"
-#include "text.h"
-#include "input.h"
+#include "CGGL/gui.h"
+#include "CGGL/shape.h"
+#include "CGGL/style.h"
+#include "CGGL/text.h"
+#include "CGGL/input.h"
 
 #include <iostream>
 #include <unordered_map>

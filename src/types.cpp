@@ -1,14 +1,11 @@
-#include "types.h"
-#include "window.h"
+#include "CGGL/types.h"
+#include "CGGL/draw.h"
 
 #include <string>
 #include <iostream>
 #include <fstream>
 
 #include <glad/glad.h>
-#include <GLFW/glfw3.h>
-
-#include "draw.h"
 
 namespace cg {
     float clamp(float v, float min, float max){
@@ -79,6 +76,7 @@ namespace cg {
     }
 
     void Shader::CompileShader(const char* path, unsigned int& shaderId, int shaderType){
+        std::cout << "Compiling shader at path " << path << std::endl;
         std::ifstream file(path);
         std::string source, line;
         while (std::getline(file, line))

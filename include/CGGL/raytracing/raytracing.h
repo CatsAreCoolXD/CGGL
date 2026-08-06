@@ -1,20 +1,20 @@
 #ifndef CGGL_RAYTRACING_H
 #define CGGL_RAYTRACING_H
 
-#include "../types.h"
-#include "../draw.h"
-#include "../input.h"
-#include "../shape.h"
-#include "../draw.h"
-#include "../window.h"
-#include "../scene.h"
+#include "CGGL/types.h"
+#include "CGGL/draw.h"
+#include "CGGL/input.h"
+#include "CGGL/shape.h"
+#include "CGGL/draw.h"
+#include "CGGL/scene.h"
 
 #include <vector>
 
 #include <glad/glad.h>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "../include/stb_image_write.h"
+#include "CGGL/stb_image_write.h"
+#include "GLFW/glfw3.h"
 
 namespace cg {
     GLFWwindow* GetWindow();
@@ -22,7 +22,6 @@ namespace cg {
         namespace {
             cg::Shader raytracingShader;
 
-            cg::Texture noiseTex, tex;
             Framebuffer frameBuffers[2];
 
             GLuint VAO, VBO, EBO;
@@ -69,15 +68,8 @@ namespace cg {
         }
 
         void InitRaytracing(){
-            raytracingShader.Create("src/raytracing/vert.glsl", "src/raytracing/frag.glsl");
-            noiseTex.LoadImage("src/raytracing/noise.png", REPEAT);
-
-            tex.SetOrigin(cg::Vec2f(0,0));
-            tex.SetSize(cg::GetWindowSize());
-            tex.SetTint(cg::Color(255,255,255));
-
-            tex.offset.y = -1.f;
-            tex.flip.y = 0.f;
+            raytracingShader.Create((std::string(CGGL_SHADER_DIR) + std::string("/raytracer-vert.glsl")).c_str(),
+                (std::string(CGGL_SHADER_DIR) + std::string("/raytracer-frag.glsl")).c_str());
         
             glGenVertexArrays(1, &VAO);
             glGenBuffers(1, &VBO);
@@ -312,9 +304,6 @@ namespace cg {
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, frameBuffers[read].GetTexture()->textureId);
 
-                glActiveTexture(GL_TEXTURE1);
-                glBindTexture(GL_TEXTURE_2D, noiseTex.textureId);
-
                 // Draw Triangles
                 glBindVertexArray(VAO);
                 glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
@@ -323,7 +312,6 @@ namespace cg {
                 frameBuffers[write].Disable();
 
                 cg::PushNewTriangleBuffer();
-                tex.textureId = frameBuffers[write].GetTexture()->textureId;
                 cg::Draw(*frameBuffers[write].GetTexture(), FLAG_NO_BORDER); // Draw a quad with the texture
 
                 // Unbind textures

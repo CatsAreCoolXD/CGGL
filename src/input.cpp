@@ -1,4 +1,4 @@
-#include "input.h"
+#include "../include/CGGL/input.h"
 
 #include <iostream>
 

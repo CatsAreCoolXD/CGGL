@@ -1,9 +1,8 @@
-#include <stack>
-
-#include "style.h"
-#include "types.h"
+#include "CGGL/style.h"
+#include "CGGL/types.h"
 
 #include <iostream>
+#include <stack>
 
 namespace cg {
     namespace {
