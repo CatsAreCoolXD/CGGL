@@ -79,10 +79,6 @@ namespace cg {
         cg::InitiliazeFreeType();
     }
 
-    void DefineRayTracing(){
-        #define RAYTRACING
-    }
-
     void ToggleVSync(bool on){
         glfwSwapInterval(on);
     }

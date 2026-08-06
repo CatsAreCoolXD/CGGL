@@ -12,7 +12,6 @@ int main(){
     cg::ToggleVSync(false);
 
     cg::Raytracing::InitRaytracing();
-    cg::DefineRayTracing();
 
     cg::SetBackgroundColor(cg::Color(2, 62, 138));
 

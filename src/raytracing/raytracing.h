@@ -23,8 +23,7 @@ namespace cg {
             cg::Shader raytracingShader;
 
             cg::Texture noiseTex, tex;
-            GLuint accumTex[2];
-            GLuint frameBuffers[2];
+            Framebuffer frameBuffers[2];
 
             GLuint VAO, VBO, EBO;
 
@@ -60,57 +59,13 @@ namespace cg {
 
         void CreateFrameBuffers(){
             // Delete old textures
-            glDeleteFramebuffers(2, frameBuffers);
-            glDeleteTextures(2, accumTex);
+            frameBuffers[0].Delete();
+            frameBuffers[1].Delete();
 
-            glGenTextures(2, accumTex);
+            Vec2i windowSize = cg::GetWindowSize();
 
-            cg::Vec2i windowSize = cg::GetWindowSize();
-
-            for (int i = 0; i < 2; i++){
-                glBindTexture(GL_TEXTURE_2D, accumTex[i]);
-
-                glTexImage2D(
-                    GL_TEXTURE_2D,
-                    0,
-                    GL_RGB,
-                    windowSize.x,
-                    windowSize.y,
-                    0,
-                    GL_RGB,
-                    GL_UNSIGNED_BYTE,
-                    NULL
-                );
-
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-                glBindTexture(GL_TEXTURE_2D, 0);
-            }
-
-            glGenFramebuffers(2, frameBuffers);
-
-            for (int i = 0; i < 2; i++)
-            {
-                glBindFramebuffer(GL_FRAMEBUFFER, frameBuffers[i]);
-
-                glFramebufferTexture2D(
-                    GL_FRAMEBUFFER,
-                    GL_COLOR_ATTACHMENT0,
-                    GL_TEXTURE_2D,
-                    accumTex[i],
-                    0
-                );
-
-                if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE){
-                    throw std::runtime_error("Error when creating frame buffers!");
-                }
-
-                glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            }
+            frameBuffers[0].Create(windowSize);
+            frameBuffers[1].Create(windowSize);
         }
 
         void InitRaytracing(){
@@ -130,11 +85,8 @@ namespace cg {
 
             cg::Raytracing::CreateFrameBuffers();
 
-            glBindFramebuffer(GL_FRAMEBUFFER, frameBuffers[0]);
-            glClear(GL_COLOR_BUFFER_BIT);
-
-            glBindFramebuffer(GL_FRAMEBUFFER, frameBuffers[1]);
-            glClear(GL_COLOR_BUFFER_BIT);
+            frameBuffers[0].Clear();
+            frameBuffers[1].Clear();
 
             glfwSetWindowSizeCallback(cg::GetWindow(), window_resize_callback);
         }
@@ -144,8 +96,7 @@ namespace cg {
             int read = frame % 2;
             int write = !read;
 
-            glBindFramebuffer(GL_FRAMEBUFFER, frameBuffers[read]);
-            glClear(GL_COLOR_BUFFER_BIT);
+            frameBuffers[read].Clear();
         }
 
         void ResetFrames(){
@@ -342,9 +293,8 @@ namespace cg {
                 int write = !read;
 
                 // Write into the frame buffer
-                glBindFramebuffer(GL_FRAMEBUFFER, frameBuffers[write]);
-                glClearColor(0.1f, 0.1f, 0.1f, 1.f);
-                glClear(GL_COLOR_BUFFER_BIT);
+                frameBuffers[write].Clear();
+                frameBuffers[write].Enable();
 
                 glBindVertexArray(VAO);
                 glBindBuffer(GL_ARRAY_BUFFER, VBO);
@@ -360,7 +310,7 @@ namespace cg {
 
                 // Bind Textures
                 glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, accumTex[read]);
+                glBindTexture(GL_TEXTURE_2D, frameBuffers[read].GetTexture()->textureId);
 
                 glActiveTexture(GL_TEXTURE1);
                 glBindTexture(GL_TEXTURE_2D, noiseTex.textureId);
@@ -370,11 +320,11 @@ namespace cg {
                 glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
                 // Unbind frame buffer
-                glBindFramebuffer(GL_FRAMEBUFFER, 0);
+                frameBuffers[write].Disable();
 
-                tex.textureId = accumTex[write];
                 cg::PushNewTriangleBuffer();
-                cg::Draw(tex, FLAG_NO_BORDER); // Draw a quad with the texture
+                tex.textureId = frameBuffers[write].GetTexture()->textureId;
+                cg::Draw(*frameBuffers[write].GetTexture(), FLAG_NO_BORDER); // Draw a quad with the texture
 
                 // Unbind textures
                 glActiveTexture(GL_TEXTURE0);
@@ -391,7 +341,7 @@ namespace cg {
             int write = frame % 2;
             int read = !write;
 
-            glBindFramebuffer(GL_FRAMEBUFFER, frameBuffers[read]);
+            glBindFramebuffer(GL_FRAMEBUFFER, frameBuffers[read].framebufferId);
             glReadPixels(0, 0, imageSize.x, imageSize.y, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
 
             stbi_write_png(name.c_str(), imageSize.x, imageSize.y, 4, pixels.data(), imageSize.x * 4);
@@ -399,6 +349,8 @@ namespace cg {
 
         void Quit() {
             raytracingShader.DeleteShader();
+            frameBuffers[0].Delete();
+            frameBuffers[1].Delete();
         }
     }
 }

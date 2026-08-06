@@ -613,4 +613,81 @@ namespace cg {
     void Texture::Scale(float scale){
         Texture::SetSize(size * scale);
     }
+
+    Framebuffer::Framebuffer(cg::Vec2i size) {
+        Framebuffer::Create(size);
+    }
+
+    void Framebuffer::Create(Vec2i size) {
+        this->size = size;
+
+        glGenTextures(1, &tex.textureId);
+
+        tex.SetSize(size);
+        tex.SetOrigin(Vec2f(0,0));
+        tex.SetTint(Color(255,255,255,255));
+        tex.offset.y = -1.f;
+        tex.flip.y = 0.f;
+
+        // Generate the texture
+        glBindTexture(GL_TEXTURE_2D, tex.textureId);
+        glTexImage2D(
+            GL_TEXTURE_2D,
+            0,
+            GL_RGB,
+            size.x,
+            size.y,
+            0,
+            GL_RGB,
+            GL_UNSIGNED_BYTE,
+            NULL
+        );
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        // Generate the framebuffer
+        glGenFramebuffers(1, &framebufferId);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, framebufferId);
+
+        glFramebufferTexture2D(
+            GL_FRAMEBUFFER,
+            GL_COLOR_ATTACHMENT0,
+            GL_TEXTURE_2D,
+            tex.textureId,
+            0
+        );
+
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE){
+            throw std::runtime_error("Error when creating framebuffer!");
+        }
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
+    void Framebuffer::Delete() {
+        glDeleteTextures(1, &tex.textureId);
+        glDeleteFramebuffers(1, &framebufferId);
+    }
+
+    void Framebuffer::Clear(Color color) {
+        glBindFramebuffer(GL_FRAMEBUFFER, framebufferId);
+        glClearColor(color.r, color.g, color.b, color.a);
+        glClear(GL_COLOR_BUFFER_BIT);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
+    void Framebuffer::Enable() {
+        glBindFramebuffer(GL_FRAMEBUFFER, framebufferId);
+    }
+
+    void Framebuffer::Disable() {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
 }

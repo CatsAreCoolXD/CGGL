@@ -37,9 +37,6 @@ namespace cg {
     void ToggleVSync(bool on);
 
     GLFWwindow* GetWindow();
-
-    // Makes Ray Tracing work with resizing windows.
-    void DefineRayTracing();
     
     bool WindowIsOpen();
 

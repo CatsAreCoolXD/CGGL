@@ -17,7 +17,60 @@
 #define USAGE_STREAM GL_STREAM_DRAW
 
 namespace cg {
-    class Texture;
+    class Texture {
+    public:
+        Texture() = default;
+        Texture(const char* path, int wrapping = REPEAT);
+
+        void LoadImage(const char* path, int wrapping = REPEAT);
+        void LoadGlyph(FT_Face& face);
+
+        void SetOrigin(cg::Vec2f pos, bool centered = false);
+        void SetSize(cg::Vec2f newSize);
+        void Scale(float scale);
+        void SetTint(cg::Color col) { tint = col; }
+
+        cg::Vec2f GetOrigin() const { return origin; }
+        cg::Vec2f GetSize() const { return size; }
+        cg::Color GetTint() const { return tint; }
+        bool IsGlyph() const { return isGlyph; }
+
+        cg::Vec2f GetOriginNDC() const { return originNDC; }
+        cg::Vec2f GetSizeNDC() const { return sizeNDC; }
+
+        void FlipHorizontally() { flip.x = 1.f; }
+        void FlipVertically() { flip.y = 1.f; }
+
+        int nrChannels;
+        unsigned int textureId;
+        cg::Vec2f flip = Vec2f(), offset = Vec2f();
+    private:
+        cg::Vec2f origin, originNDC, size, sizeNDC;
+        cg::Color tint;
+        int width = 0, height = 0;
+        bool isGlyph = false;
+    };
+
+    class Framebuffer {
+        public:
+            Framebuffer() {}
+            Framebuffer(Vec2i size);
+
+            void Create(Vec2i size);
+            void Clear(Color color = Color(0.f,0.f,0.f,1.f));
+            void Delete();
+
+            void Enable();
+            void Disable();
+
+            cg::Texture* GetTexture() { return &tex; }
+
+            GLuint framebufferId;
+        private:
+            cg::Vec2i size;
+            cg::Texture tex;
+    };
+
     class TriangleBuffer {
         public:
             TriangleBuffer() {}
@@ -38,7 +91,7 @@ namespace cg {
             std::vector<unsigned int> indices;
             bool isTexture = false;
             cg::Texture* texture = nullptr;
-            cg::Shader* shader;
+            cg::Shader* shader = nullptr;
     };
 
     size_t HashVertex(float* vertex, int size);
@@ -90,40 +143,6 @@ namespace cg {
 
     // Set the vertex usage mode. Default is USAGE_DYNAMIC.
     void SetUsageMode(int newUsage);
-
-    class Texture {
-        public:
-            Texture() {}
-            Texture(const char* path, int wrapping = REPEAT);
-
-            void LoadImage(const char* path, int wrapping = REPEAT);
-            void LoadGlyph(FT_Face& face);
-
-            void SetOrigin(cg::Vec2f pos, bool centered = false);
-            void SetSize(cg::Vec2f newSize);
-            void Scale(float scale);
-            void SetTint(cg::Color col) { tint = col; }
-
-            cg::Vec2f GetOrigin() const { return origin; }
-            cg::Vec2f GetSize() const { return size; }
-            cg::Color GetTint() const { return tint; }
-            bool IsGlyph() const { return isGlyph; }
-
-            cg::Vec2f GetOriginNDC() const { return originNDC; }
-            cg::Vec2f GetSizeNDC() const { return sizeNDC; }
-
-            void FlipHorizontally() { flip.x = 1.f; }
-            void FlipVertically() { flip.y = 1.f; }
-
-            int nrChannels;
-            unsigned int textureId;
-            cg::Vec2f flip, offset;
-        private:
-            cg::Vec2f origin, originNDC, size, sizeNDC;
-            cg::Color tint;
-            int width, height;
-            bool isGlyph = false;
-    };
 
     void UseTexture(cg::Texture& tex);
     void StopUsingTexture();
