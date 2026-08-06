@@ -41,7 +41,7 @@ int main(){
 
     cg::PushQuality(4);
 
-    int raysPerPixel = 1, maxBounces = 3, passesPerFrame = 1;
+    int raysPerPixel = 1, maxBounces = 3, passesPerFrame = 1, debugView = 0, debugNormalization = 100;
     float blurStrength = 0.5f, smoothness = 0.f;
     bool enableFrameAccumulation = false;
 
@@ -58,7 +58,7 @@ int main(){
 
     cg::Object dragon = scene.LoadPly("src/models/dragon.ply", .0f,
         cg::Transform(cg::Vec3f(6.5f, 1.5f, 0), cg::Vec3f(0.f, 0.5f, 0.f), cg::Vec3f(2.f)), 16);
-    scene.LoadPly("src/models/tree.ply", 0.f, cg::Transform(), 2);
+    //scene.LoadPly("src/models/dragon.ply", 0.f, cg::Transform(), 16);
 
     cg::Raytracing::SetCameraLookAt(cg::Vec3f());
     cg::Raytracing::SetCameraPos(cg::Vec3f(30, 10, 0));
@@ -69,7 +69,7 @@ int main(){
         double deltaTime = cg::GetDeltatime();
 
         cg::Raytracing::UpdateFreecam();
-        //dragon.Rotate(cg::Vec3f(0.f, deltaTime, 0.f));
+        dragon.Rotate(cg::Vec3f(0.f, deltaTime, 0.f));
         //dragon.Move(cg::Vec3f(deltaTime, 0.f, 0.f));
         if (cg::IsKeyUp(KEY_SPACE)) {
             cg::Raytracing::SetRaysPerPixels(raysPerPixel);
@@ -77,8 +77,10 @@ int main(){
             cg::Raytracing::SetBlurStrength(blurStrength);
             cg::Raytracing::SetPassesPerFrame(passesPerFrame);
             cg::Raytracing::ToggleFrameAccumulation(enableFrameAccumulation);
+            cg::Raytracing::SetDebugView(debugView);
+            cg::Raytracing::SetDebugNormalization(debugNormalization);
 
-            //cg::Raytracing::LoadScene(scene);
+            cg::Raytracing::LoadScene(scene);
             cg::Raytracing::RayTrace(scene);
         } else {
             cg::Draw(scene, cg::Raytracing::GetCameraPos(), cg::Raytracing::GetCameraLookAt());
@@ -92,14 +94,20 @@ int main(){
         cg::GUIText("FPS: " + std::to_string((int)cg::GetAverageFPS()), FLAG_USE_SECONDARY_COLOR);
         cg::PopFont();
 
-        cg::GUISlider("Rays Per Pixel", raysPerPixel, 0, 50);
+        cg::GUISlider("Rays Per Pixel", raysPerPixel, 1, 50);
         cg::GUISlider("Max Bounces", maxBounces, 0, 100);
-        cg::GUISlider("Passes Per Frame", passesPerFrame, 1, 10);
+        cg::GUISlider("Passes Per Frame", passesPerFrame, 1, 50);
         cg::GUISlider("Blur Strength", blurStrength, 0.f, 100.f);
+        cg::GUISlider("Debug View", debugView, 0, 3);
+        cg::GUISlider("Debug Normalization", debugNormalization, 0, 2000);
         cg::GUICheckBox("Enable Frame Accumulation", enableFrameAccumulation);
         if (cg::GUIButton("Reset Accumulation")) cg::Raytracing::QueueClear();
         if (cg::GUIButton("Export Image")) cg::Raytracing::ExportImage("image.png");
         cg::GUIText("Press SPACE to stop raytracing", FLAG_USE_SECONDARY_COLOR);
+        cg::GUIText("Debug views:");
+        cg::GUIText("1: Triangle Tests");
+        cg::GUIText("2: Box Tests");
+        cg::GUIText("3: Both Tests");
 
         cg::GUIEndSection();
 

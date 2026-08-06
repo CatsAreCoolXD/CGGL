@@ -46,10 +46,10 @@ namespace cg {
     };
 
     struct BVHNode {
-        float pos[3];
+        float min[3];
         int childIndex;
 
-        float size[3];
+        float max[3];
         int trianglesStart;
 
         int trianglesEnd;
@@ -82,7 +82,7 @@ namespace cg {
                 this->transform = transform;
             }
 
-            void RotateAround(cg::Vec3f pivot, cg::Vec3f rotation);
+            void RotateAround(cg::Vec3f pivot, cg::Vec3f rotation) const;
             void Rotate(cg::Vec3f rotation);
 
             void Move(cg::Vec3f movement);

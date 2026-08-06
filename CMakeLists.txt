@@ -3,7 +3,7 @@ project(CGGL)
 
 set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 
-set(CMAKE_CXX_FLAGS "-O3")
+set(CMAKE_CXX_FLAGS "-O2")
 
 # glad, glfw
 add_subdirectory(deps)

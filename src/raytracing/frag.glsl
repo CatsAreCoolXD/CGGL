@@ -14,9 +14,16 @@ uniform float blurStrength;
 uniform bool enableFrameAccumulation;
 
 uniform int frame;
+uniform int randomValue;
 
 uniform vec3 cameraPos;
 uniform vec3 cameraLookAt;
+
+// Debug stats
+uniform int debugView;
+uniform int debugNormalization;
+int triangleTests = 0;
+int boxTests = 0;
 
 struct Material {
     vec3 color;
@@ -50,9 +57,9 @@ struct Mesh {
 };
 
 struct BVHNode {
-    vec3 pos;
+    vec3 min;
     int childIndex;
-    vec3 size;
+    vec3 max;
     int trianglesStart;
     int trianglesEnd;
 };
@@ -177,21 +184,22 @@ void RayBoxIntersection(in Ray ray, in Box box, inout HitInfo hitInfo) {
 }
 
 void RayBoxIntersection(in Ray ray, in BVHNode box, inout HitInfo hitInfo) {
+    boxTests++;
     hitInfo.hit = false;
 
     vec3 rd = ray.direction;
-    vec3 ro = ray.origin - box.pos;
+    vec3 ro = ray.origin - (box.min + box.max) / 2.0;
 
     vec3 m = sign(rd)*abs(ray.invDir);
     vec3 n = m*ro;
-    vec3 k = abs(m)*box.size;
-	
+    vec3 k = abs(m)*((box.max - box.min) / 2.0);
+
     vec3 t1 = -n - k;
     vec3 t2 = -n + k;
 
 	float tN = max( max( t1.x, t1.y ), t1.z );
 	float tF = min( min( t2.x, t2.y ), t2.z );
-	
+
     if (tN > tF || tF <= 0.) {
         hitInfo.hit = false;
     } else {
@@ -202,6 +210,7 @@ void RayBoxIntersection(in Ray ray, in BVHNode box, inout HitInfo hitInfo) {
 
 // Triangle:        https://www.shadertoy.com/view/MlGcDz
 void RayTriangleIntersection(in Ray r, in Triangle triangle, inout HitInfo hitInfo) {
+    triangleTests++;
     vec3 v0 = triangle.p1;
     vec3 v1 = triangle.p2;
     vec3 v2 = triangle.p3;
@@ -286,23 +295,30 @@ void TestMeshes(in Ray ray, inout IntersectInfo result){
         nodeStack[stackIndex++] = meshes[i].boundingBoxIndex;
         while (stackIndex > 0){
             BVHNode node = nodes[nodeStack[--stackIndex]];
+
             if (node.childIndex == 0) { // Leaf node, has no children
                 TestTriangles(ray, node.trianglesStart, node.trianglesEnd, result);
             } else { // Test children
                 HitInfo hitChildA;
+                hitChildA.hit = false;
                 hitChildA.dst = INF;
                 HitInfo hitChildB;
+                hitChildB.hit = false;
                 hitChildB.dst = INF;
 
                 RayBVHIntersection(ray, nodes[node.childIndex + 0], hitChildA);
                 RayBVHIntersection(ray, nodes[node.childIndex + 1], hitChildB);
 
                 if (hitChildA.dst < hitChildB.dst){
-                    if (hitChildB.hit && hitChildB.dst < result.dst) nodeStack[stackIndex++] = node.childIndex + 1;
-                    if (hitChildA.dst < result.dst) nodeStack[stackIndex++] = node.childIndex + 0;
+                    if (hitChildB.hit && hitChildB.dst < result.dst)
+                        nodeStack[stackIndex++] = node.childIndex + 1;
+                    if (hitChildA.hit && hitChildA.dst < result.dst)
+                        nodeStack[stackIndex++] = node.childIndex + 0;
                 } else {
-                    if (hitChildA.hit && hitChildA.dst < result.dst) nodeStack[stackIndex++] = node.childIndex + 0;
-                    if (hitChildB.dst < result.dst) nodeStack[stackIndex++] = node.childIndex + 1;
+                    if (hitChildA.hit && hitChildA.dst < result.dst)
+                        nodeStack[stackIndex++] = node.childIndex + 0;
+                    if (hitChildB.hit && hitChildB.dst < result.dst)
+                        nodeStack[stackIndex++] = node.childIndex + 1;
                 }
             }
         }
@@ -327,7 +343,6 @@ void TestSpheres(in Ray ray, inout IntersectInfo result){
 }
 
 vec3 GetSkyColor(vec3 rd){
-    return vec3(0.);
     float a = 0.5*(rd.y + 1.0);
     return (1.0-a)*vec3(1.0, 1.0, 1.0) + a*vec3(0.5, 0.7, 1.0);
 }
@@ -350,7 +365,7 @@ vec3 RayTrace(in Ray ray, inout uint seed){
 
             // Stop tracing if the light is already really low.
             float p = max(color.r, max(color.g, color.b));
-            if (bounce > 3 && RandomValue(seed) < p) break;
+            //if (bounce > 5 && RandomValue(seed) < p) break;
 
             if (dot(result.normal, ray.direction) > 0) result.normal *= -1.0; // Normal must be wrong, so correct it
 
@@ -364,7 +379,7 @@ vec3 RayTrace(in Ray ray, inout uint seed){
             else ray.direction = mix(randomDirection, reflect(ray.direction, result.normal), smoothness);
             ray.invDir = 1.0 / ray.direction;
         } else {
-            if (bounce == 0) incomingLight = GetSkyColor(ray.direction);
+            incomingLight += GetSkyColor(ray.direction) * color;
             break;
         }
     }
@@ -392,7 +407,7 @@ vec3 GetPixelColor(){
     vec2 texCoords = gl_FragCoord.xy / resolution;
     float index = gl_FragCoord.x + gl_FragCoord.y * resolution.x;
     float maxIndex = resolution.x + resolution.y * resolution.x;
-    uint seed = uint(index + frame * index);
+    uint seed = uint(index + (frame + randomValue) * index);
 
     vec3 colorSum = vec3(0.);
     for (int r = 0; r < raysPerPixel; r++) {
@@ -411,6 +426,13 @@ vec3 GetPixelColor(){
     vec3 col = colorSum / raysPerPixel;
     vec3 previousCol = texture(frameBuffer, texCoords).rgb;
     vec3 avg = (previousCol * frame + col) / (frame + 1);
+
+    float triangleDebug = float(triangleTests) / float(debugNormalization);
+    float boxDebug = float(boxTests) / float(debugNormalization);
+
+    if (debugView == 1) col = vec3(triangleDebug);
+    if (debugView == 2) col = vec3(boxDebug);
+    if (debugView == 3) col = vec3(boxDebug, 0., triangleDebug);
 
     if (!enableFrameAccumulation) return col;
 

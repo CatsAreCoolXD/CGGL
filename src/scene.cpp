@@ -11,34 +11,27 @@ namespace cg {
         double bvhCreationTimePoint;
     }
 
+    void SetNodeMin(BVHNode& node, cg::Vec3f min) {
+        node.min[0] = min.x; node.min[1] = min.y, node.min[2] = min.z;
+    }
+    void SetNodeMax(BVHNode& node, cg::Vec3f max) {
+        node.max[0] = max.x; node.max[1] = max.y, node.max[2] = max.z;
+    }
+    void SetNodeMin(BVHNode& node, float* min) {
+        node.min[0] = min[0]; node.min[1] = min[1], node.min[2] = min[2];
+    }
+    void SetNodeMax(BVHNode& node, float* max) {
+        node.max[0] = max[0]; node.max[1] = max[1], node.max[2] = max[2];
+    }
+
     void GrowBoundingBox(cg::BVHNode& node, cg::Vec3f v){
-        cg::Vec3f pos(node.pos[0], node.pos[1], node.pos[2]), size(node.size[0], node.size[1], node.size[2]);
-        cg::Vec3f min(pos - size), max(pos + size);
+        if (v.x < node.min[0]) node.min[0] = v.x;
+        if (v.y < node.min[1]) node.min[1] = v.y;
+        if (v.z < node.min[2]) node.min[2] = v.z;
 
-        // First time the bounding box is growing.
-        if (min == cg::Vec3f(0,0,0) && max == cg::Vec3f(0,0,0) && pos == cg::Vec3f(0,0,0)) {
-            pos = v;
-            size = cg::Vec3f(0.1,0.1,0.1); // Always have a little bit of size
-        } else {
-            if (v.x < min.x) min.x = v.x;
-            if (v.y < min.y) min.y = v.y;
-            if (v.z < min.z) min.z = v.z;
-
-            if (v.x > max.x) max.x = v.x;
-            if (v.y > max.y) max.y = v.y;
-            if (v.z > max.z) max.z = v.z;
-
-            size = (max - min) / 2.f;
-            pos = (max + min) / 2.f;
-        }
-
-        node.size[0] = size.x;
-        node.size[1] = size.y;
-        node.size[2] = size.z;
-
-        node.pos[0] = pos.x;
-        node.pos[1] = pos.y;
-        node.pos[2] = pos.z;
+        if (v.x > node.max[0]) node.max[0] = v.x;
+        if (v.y > node.max[1]) node.max[1] = v.y;
+        if (v.z > node.max[2]) node.max[2] = v.z;
     }
 
     void GrowBoundingBox(cg::BVHNode& node, float* p){
@@ -46,10 +39,21 @@ namespace cg {
         GrowBoundingBox(node, pos);
     }
 
+    void ResetNode(BVHNode& child, BVHNode& parent) {
+        float min[3] = { 100000, 100000, 100000 };
+        float max[3] = { -100000, -100000, -100000 };
+
+        child.trianglesStart = parent.trianglesStart;
+        child.trianglesEnd = parent.trianglesStart;
+
+        SetNodeMin(child, min);
+        SetNodeMax(child, max);
+    };
+
     /* OBJECT */
 
     // Todo: optimize
-    void Object::RotateAround(cg::Vec3f pivot, cg::Vec3f rotation) {
+    void Object::RotateAround(cg::Vec3f pivot, cg::Vec3f rotation) const {
         Vec3f sr(sinf(rotation.x), sinf(rotation.y), sinf(rotation.z));
         Vec3f cr(cosf(rotation.x), cosf(rotation.y), cosf(rotation.z));
         for (TriangleObject* tri = trianglesStart; tri != trianglesEnd + 1; tri++) {
@@ -109,13 +113,13 @@ namespace cg {
         }
 
         const std::vector<TriangleObject>& triangles = scene->GetTriangles();
-        for (BVHNode* node = bvhStart; node < bvhEnd + 1; node++) {
+        for (BVHNode* node = bvhStart; node != bvhEnd; node++) {
             BVHNode newNode{};
+            newNode.childIndex = node->childIndex;
+            ResetNode(newNode, *node);
             newNode.trianglesStart = node->trianglesStart;
             newNode.trianglesEnd = node->trianglesEnd;
-            newNode.childIndex = node->childIndex;
-
-            for (int i = newNode.trianglesStart; i <= newNode.trianglesEnd; i++) {
+            for (int i = newNode.trianglesStart; i < newNode.trianglesEnd; i++) {
                 TriangleObject triangle = triangles[i];
                 cg::GrowBoundingBox(newNode, cg::Vec3f(triangle.p1[0], triangle.p1[1], triangle.p1[2]));
                 cg::GrowBoundingBox(newNode, cg::Vec3f(triangle.p2[0], triangle.p2[1], triangle.p2[2]));
@@ -132,16 +136,20 @@ namespace cg {
     }
 
     void Object::Move(cg::Vec3f movement) {
-        for (TriangleObject* tri = trianglesStart; tri < trianglesEnd; tri++) {
+        for (TriangleObject* tri = trianglesStart; tri != trianglesEnd + 1; tri++) {
             tri->p1[0] += movement.x; tri->p2[0] += movement.x; tri->p3[0] += movement.x;
             tri->p1[1] += movement.y; tri->p2[1] += movement.y; tri->p3[1] += movement.y;
             tri->p1[2] += movement.z; tri->p2[2] += movement.z; tri->p3[2] += movement.z;
         }
 
         for (BVHNode* node = bvhStart; node < bvhEnd; node++) {
-            node->pos[0] += movement.x;
-            node->pos[1] += movement.y;
-            node->pos[2] += movement.z;
+            node->min[0] += movement.x;
+            node->min[1] += movement.y;
+            node->min[2] += movement.z;
+
+            node->max[0] += movement.x;
+            node->max[1] += movement.y;
+            node->max[2] += movement.z;
         }
 
         transform.position = transform.position + movement;
@@ -280,7 +288,7 @@ namespace cg {
         meshes.push_back(mesh);
 
         cg::Object object(transform, triangles[mesh.triangleIndexStart], triangles[mesh.triangleIndexEnd - 1], bvhNodes[mesh.boundingBoxIndex], bvhNodes.back(), *this);
-        object.Rotate(transform.rotation);
+        //object.Rotate(transform.rotation);
         return object;
     }
 
@@ -295,17 +303,14 @@ namespace cg {
 
         BVHNode childA{}, childB{};
 
-        childA.trianglesStart = parent.trianglesStart;
-        childB.trianglesStart = parent.trianglesStart;
+        ResetNode(childA, parent);
+        ResetNode(childB, parent);
 
-        childA.trianglesEnd = parent.trianglesStart;
-        childB.trianglesEnd = parent.trianglesStart;
-
-        int longestAxis = parent.size[0] > parent.size[1] ? 0 : 1;
-        if (parent.size[2] > parent.size[longestAxis]) longestAxis = 2;
+        int longestAxis = (parent.max[0] - parent.min[0]) > (parent.max[1] - parent.min[1]) ? 0 : 1;
+        if (parent.max[2] - parent.min[2] > parent.max[longestAxis] - parent.min[longestAxis]) longestAxis = 2;
 
         for (int i = parent.trianglesStart; i < parent.trianglesEnd; i++){
-            bool triangleIsInFirstHalf = cg::GetTriangleCenter(triangles[i])[longestAxis] < parent.pos[longestAxis];
+            bool triangleIsInFirstHalf = cg::GetTriangleCenter(triangles[i])[longestAxis] < (parent.max[longestAxis] + parent.min[longestAxis]) / 2.f;
             BVHNode& node = triangleIsInFirstHalf ? childA : childB;
             node.trianglesEnd++;
 
@@ -337,6 +342,17 @@ namespace cg {
         if (childB.trianglesEnd - childB.trianglesStart > minTriangleAmount) Scene::Split(bvhNodes[childBIndex], maxDepth - 1);
     }
 
+    void NodeDepthTest(const std::vector<BVHNode>& nodes, int index, int depth, std::string& output) {
+        const BVHNode& node = nodes[index];
+        for (int i = 0; i < depth*2; i++) output += " ";
+        output += "- " + std::to_string(node.trianglesEnd - node.trianglesStart) + "\n";
+
+        if (node.childIndex != 0) {
+            NodeDepthTest(nodes, node.childIndex + 0, depth + 1, output);
+            NodeDepthTest(nodes, node.childIndex + 1, depth + 1, output);
+        }
+    }
+
     int Scene::ConvertTrianglesToBVH(BVHNode& rootNode, int depthLimit){
         int i = bvhNodes.size();
         bvhNodes.push_back(rootNode);
@@ -345,6 +361,8 @@ namespace cg {
 
         Scene::Split(bvhNodes[i], depthLimit);
 
+        std::string nodeDepthOutput;
+        NodeDepthTest(bvhNodes, i, 0, nodeDepthOutput);
         std::cout << "---- BVH INFORMATION ----\n";
         std::cout << "BVH Creation took " << glfwGetTime() - bvhCreationTimePoint << " seconds\n";
         std::cout << "BVH Nodes: " << bvhNodes.size() - i << std::endl; 

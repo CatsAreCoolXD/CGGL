@@ -28,7 +28,7 @@ namespace cg {
 
             GLuint VAO, VBO, EBO;
 
-            int raysPerPixel = 5, maxBounces = 5, passesPerFrame = 1;
+            int raysPerPixel = 5, maxBounces = 5, passesPerFrame = 1, debugView = 0, debugNormalization;
             float blurStrength = 0.f;
             int frame = 0;
 
@@ -194,6 +194,20 @@ namespace cg {
             frame = 0;
         }
 
+        void SetDebugView(int value) {
+            if (value == debugView) return;
+            debugView = std::clamp(value, 0, 3);
+            cg::Raytracing::ClearFrameBuffers();
+            frame = 0;
+        }
+
+        void SetDebugNormalization(int value) {
+            if (value == debugNormalization) return;
+            debugNormalization = std::max(0, value);
+            cg::Raytracing::ClearFrameBuffers();
+            frame = 0;
+        }
+
         void ToggleFrameAccumulation(bool value) {
             enableFrameAccumulation = value;
         }
@@ -244,7 +258,6 @@ namespace cg {
         void LoadScene(cg::Scene& scene){
             raytracingShader.Use();
 
-            srand(time(NULL));
             raytracingShader.SetBuffer(scene.GetAmountOfMaterials() * sizeof(Material), scene.GetMaterials().data(), 0u);
             raytracingShader.SetBuffer(scene.GetAmountOfSpheres() * sizeof(Sphere), scene.GetSpheres().data(), 1u);
             raytracingShader.SetBuffer(scene.GetAmountOfTriangles() * sizeof(TriangleObject), scene.GetTriangles().data(), 2u);
@@ -262,9 +275,12 @@ namespace cg {
             raytracingShader.SetInt("raysPerPixel", raysPerPixel);
             raytracingShader.SetInt("maxBounces", maxBounces);
             raytracingShader.SetFloat("blurStrength", blurStrength);
+            raytracingShader.SetInt("debugView", debugView);
+            raytracingShader.SetInt("debugNormalization", debugNormalization);
 
             cg::Vec2i windowSize = cg::GetWindowSize();
             raytracingShader.SetInt("frame", 0);
+            raytracingShader.SetInt("randomValue", rand());
             raytracingShader.SetFloats("resolution", cg::Vec2f(cg::GetWindowSize()));
             raytracingShader.SetFloats("cameraPos", cg::Vec3f(cameraPos));
             raytracingShader.SetFloats("cameraLookAt", cg::Vec3f(cameraLookAt));
@@ -299,8 +315,11 @@ namespace cg {
                 raytracingShader.SetInt("amountOfBVHNodes", scene.GetAmountOfBVHNodes());
 
                 raytracingShader.SetInt("frame", frame);
+                raytracingShader.SetInt("randomValue", rand() % 100);
                 raytracingShader.SetInt("raysPerPixel", raysPerPixel);
                 raytracingShader.SetInt("maxBounces", maxBounces);
+                raytracingShader.SetInt("debugView", debugView);
+                raytracingShader.SetInt("debugNormalization", debugNormalization);
                 raytracingShader.SetFloat("blurStrength", blurStrength);
                 raytracingShader.SetFloats("resolution", cg::Vec2f(cg::GetWindowSize()));
                 raytracingShader.SetFloats("cameraPos", cg::Vec3f(cameraPos));
