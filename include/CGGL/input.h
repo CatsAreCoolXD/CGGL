@@ -81,6 +81,7 @@
 #define KEY_FN GLFW_KEY_F
 #define KEY_LSUPER GLFW_KEY_LEFT_SUPER
 #define KEY_RSUPER GLFW_KEY_RIGHT_SUPER
+#define KEY_ENTER GLFW_KEY_ENTER
 
 #define KEY_UP GLFW_KEY_UP
 #define KEY_DOWN GLFW_KEY_DOWN
@@ -125,7 +126,9 @@
 #define KEY_F25 GLFW_KEY_F25
 
 #define KEY_UNKNOWN GLFW_KEY_UNKNOWN
+#define KEY_FIRST GLFW_KEY_SPACE
 #define KEY_LAST GLFW_KEY_LAST
+#define KEY_LAST_PRINTABLE GLFW_KEY_WORLD_2
 
 #define MOUSE_BUTTON_LEFT GLFW_MOUSE_BUTTON_LEFT
 #define MOUSE_BUTTON_MIDDLE GLFW_MOUSE_BUTTON_MIDDLE
@@ -188,6 +191,8 @@ namespace cg {
 
     int* GetKeyStates();
     int* GetMouseButtonStates();
+
+    char KeyToChar(int key);
 };
 
 #define IsKeyPressed(key) IsKeyDown(key)

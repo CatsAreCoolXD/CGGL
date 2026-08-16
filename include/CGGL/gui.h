@@ -14,6 +14,7 @@ namespace cg {
             void IncrementCurrentPosition(cg::Vec2f increment, bool& sameLine);
             cg::Vec2f GetCurrentPos() const;
             int GetSpacing() const { return spacing; }
+            cg::Vec2f GetSize() const { return size; }
 
             void SetSpacing(int spacing);
             void SetMargin(int margin);
@@ -39,6 +40,7 @@ namespace cg {
     bool GUISlider(std::string text, T& value, T min = 0.f, T max = 0.f, float scale = 1.f);
 
     void GUICheckBox(std::string text, bool& value);
+    bool GUIInputBox(std::string name, std::string& text, unsigned int flags = 0);
 }
 
 #endif

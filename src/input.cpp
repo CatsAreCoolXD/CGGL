@@ -89,4 +89,10 @@ namespace cg {
     void SetMouseScroll(cg::Vec2d delta){
         scrollDeltaNew = delta;
     }
+
+    char KeyToChar(int key) {
+        bool caps = !cg::IsKeyDown(KEY_LSHIFT);
+        if (key <= KEY_LAST_PRINTABLE) return (char)key + caps * 32;
+        return ' ';
+    }
 }

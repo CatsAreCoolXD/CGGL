@@ -27,13 +27,14 @@ namespace cg {
             GLuint VAO, VBO, EBO;
 
             int raysPerPixel = 5, maxBounces = 5, passesPerFrame = 1, debugView = 0, debugNormalization;
-            float blurStrength = 0.f;
+            float blurStrength = 0.f, waterLevel = 0.f;
             int frame = 0;
+            float time = 1.f;
 
             cg::Vec3d cameraPos(-15,5,0), cameraLookAt(0,0,0);
             double flySpeed = 1.0;
 
-            bool enableFreeCam = true, clearQueued = false, framebufferResizeQueued = false, enableFrameAccumulation = false;
+            bool enableFreeCam = true, clearQueued = false, framebufferResizeQueued = false, enableFrameAccumulation = false, enableWater = false;
 
             void window_resize_callback(GLFWwindow* window, int width, int height){
                 framebufferResizeQueued = true;
@@ -84,7 +85,7 @@ namespace cg {
         }
 
         // Call this before calling RayTrace()
-        void ClearFrameBuffers(){
+        void ClearFramebuffers(){
             int read = frame % 2;
             int write = !read;
 
@@ -98,61 +99,75 @@ namespace cg {
         void SetRaysPerPixels(int value) {
             if (value == raysPerPixel) return;
             raysPerPixel = value;
-            cg::Raytracing::ClearFrameBuffers();
+            cg::Raytracing::ClearFramebuffers();
             frame = 0;
         }
 
         void SetMaxBounces(int value) {
             if (value == maxBounces) return;
             maxBounces = value;
-            cg::Raytracing::ClearFrameBuffers();
+            cg::Raytracing::ClearFramebuffers();
             frame = 0;
         }
 
         void SetPassesPerFrame(int value) {
             if (value == passesPerFrame) return;
             passesPerFrame = std::max(value, 1);
-            ClearFrameBuffers();
+            ClearFramebuffers();
             frame = 0;
         }
 
         void SetBlurStrength(float value){
             if (value == blurStrength) return;
             blurStrength = value;
-            cg::Raytracing::ClearFrameBuffers();
+            cg::Raytracing::ClearFramebuffers();
             frame = 0;
         }
 
         void SetCameraPos(cg::Vec3d pos){
             if (pos == cameraPos) return;
             cameraPos = pos;
-            cg::Raytracing::ClearFrameBuffers();
+            cg::Raytracing::ClearFramebuffers();
             frame = 0;
         }
 
         void SetCameraLookAt(cg::Vec3d lookAt){
             if (lookAt == cameraLookAt) return;
             cameraLookAt = lookAt;
-            cg::Raytracing::ClearFrameBuffers();
+            cg::Raytracing::ClearFramebuffers();
             frame = 0;
         }
 
         void SetDebugView(int value) {
             if (value == debugView) return;
             debugView = std::clamp(value, 0, 3);
-            cg::Raytracing::ClearFrameBuffers();
+            cg::Raytracing::ClearFramebuffers();
             frame = 0;
         }
 
         void SetDebugNormalization(int value) {
             if (value == debugNormalization) return;
             debugNormalization = std::max(0, value);
-            cg::Raytracing::ClearFrameBuffers();
+            cg::Raytracing::ClearFramebuffers();
             frame = 0;
         }
 
         void ToggleFrameAccumulation(bool value) {
             enableFrameAccumulation = value;
+        }
+        
+        void ToggleWater(bool value) {
+            if (enableWater == value) return;
+            enableWater = value;
+            ClearFramebuffers();
+            frame = 0;
+        }
+
+        void SetWaterLevel(float value) {
+            if (waterLevel == value) return;
+            waterLevel = value;
+            ClearFramebuffers();
+            frame = 0;
         }
 
         void UpdateFreecam()
@@ -172,7 +187,7 @@ namespace cg {
             cg::Vec2d mousePos = cg::GetMousePos() / cg::Vec2d(cg::GetWindowSize());
 
             cg::Vec2d mouseT = (mousePos - previousMousePos) * 2.0 * 3.14159 * sens;
-            double deltaTime = cg::GetDeltatime();
+            double deltaTime = cg::GetDeltaTime();
 
             previousMousePos = mousePos;
 
@@ -228,15 +243,20 @@ namespace cg {
             raytracingShader.SetFloats("cameraPos", cg::Vec3f(cameraPos));
             raytracingShader.SetFloats("cameraLookAt", cg::Vec3f(cameraLookAt));
             raytracingShader.SetBool("enableFrameAccumulation", enableFrameAccumulation);
+            raytracingShader.SetBool("enableWater", enableWater);
+            raytracingShader.SetFloat("waterLevel", waterLevel);
+            raytracingShader.SetFloat("deltaTime", GetDeltaTime());
+            raytracingShader.SetFloat("time", glfwGetTime());
 
             clearQueued = true;
         }
 
         void RayTrace(cg::Scene& scene){
+            if (!enableFrameAccumulation) time += GetDeltaTime();
             if (clearQueued || !enableFrameAccumulation){
                 clearQueued = false;
 
-                cg::Raytracing::ClearFrameBuffers();
+                cg::Raytracing::ClearFramebuffers();
                 cg::Raytracing::ResetFrames();
             }
 
@@ -244,7 +264,7 @@ namespace cg {
                 framebufferResizeQueued = false;
 
                 cg::Raytracing::InitRaytracing();
-                cg::Raytracing::ClearFrameBuffers();
+                cg::Raytracing::ClearFramebuffers();
                 cg::Raytracing::ResetFrames();
             }
 
@@ -268,6 +288,10 @@ namespace cg {
                 raytracingShader.SetFloats("cameraPos", cg::Vec3f(cameraPos));
                 raytracingShader.SetFloats("cameraLookAt", cg::Vec3f(cameraLookAt));
                 raytracingShader.SetBool("enableFrameAccumulation", enableFrameAccumulation || pass > 0);
+                raytracingShader.SetBool("enableWater", enableWater);
+                raytracingShader.SetFloat("waterLevel", waterLevel);
+                raytracingShader.SetFloat("deltaTime", GetDeltaTime());
+                raytracingShader.SetFloat("time", time);
 
                 constexpr float vertices[12] = {
                     -1.f, -1.f, 0.f,

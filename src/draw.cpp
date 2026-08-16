@@ -123,7 +123,7 @@ namespace cg {
         cg::PushStyle(cg::GetStyle());
     }
 
-    double GetDeltatime(){
+    double GetDeltaTime(){
         return deltaTime;
     }
 

@@ -120,7 +120,7 @@ namespace cg {
 
     GLuint GetUsage();
 
-    double GetDeltatime();
+    double GetDeltaTime();
     double GetAverageFPS();
     bool IsUsingTexture();
     cg::Vec2f GetTextureOrigin();

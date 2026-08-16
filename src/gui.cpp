@@ -131,6 +131,43 @@ namespace cg
         cg::Text(text, pos, flags & ~FLAG_CENTERED);
     }
 
+    bool GUIInputBox(std::string name, std::string& text, unsigned int flags){
+        GUI_REQUIRE_SECTION("GUIInputBox()")
+
+        cg::Vec2f size = cg::Vec2f(std::min(std::max(200.f, cg::MeasureText(text).x + currentSection->GetSpacing()), currentSection->GetSize().x), 25);
+
+        currentSection->IncrementCurrentPosition(size, sameLine);
+
+        cg::Vec2f mousePos = cg::GetMousePos();
+        cg::Vec2f buttonPos = currentSection->GetCurrentPos();
+        cg::Vec2f delta = mousePos - buttonPos;
+
+        bool hovering = delta.x > 0 && delta.y > 0 && delta.x < size.x && delta.y < size.y;
+        bool pressingButton = hovering && cg::IsMouseButtonDown(MOUSE_BUTTON_LEFT);
+        if (pressingButton) guiElementsInformation[name] = true;
+        if ((!hovering && cg::IsMouseButtonDown(MOUSE_BUTTON_LEFT)) || cg::GetKeyDown(KEY_ENTER)) guiElementsInformation[name] = false;
+
+        bool clicked = guiElementsInformation[name];
+
+        if (clicked) {
+            for (int key = KEY_FIRST; key < KEY_LAST_PRINTABLE; key++) {
+                if (cg::GetKeyDown(key)) text += cg::KeyToChar(key);
+            }
+            if (cg::GetKeyDown(KEY_BACKSPACE) && !text.empty()) text.erase(text.end() - 1);
+        }
+
+        float factor = HOVER_COLOR_SCALE_FACTOR * (pressingButton ? HOVER_COLOR_SCALE_FACTOR : 1.f);
+        if (hovering) cg::PushPrimaryColor(cg::GetCurrentStyle().primaryColor * cg::Color(factor, factor, factor, 1.f));
+
+        cg::Vec2f pos = currentSection->GetCurrentPos();
+        cg::RoundedRectangle(pos, size, cg::GetRoundedSize(size), flags);
+        cg::Text(text, cg::Vec2f(pos.x + currentSection->GetSpacing(), pos.y + size.y / 2  - cg::MeasureText(text).y / 2), FLAG_USE_SECONDARY_COLOR);
+
+        if (hovering) cg::PopStyle();
+
+        return cg::GetKeyDown(KEY_ENTER);
+    }
+
     bool GUIButton(std::string text, unsigned int flags){
         GUI_REQUIRE_SECTION("GUIButton()")
 

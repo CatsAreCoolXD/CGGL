@@ -75,6 +75,9 @@ namespace cg {
 
         cg::InitializeDrawing();
         cg::InitiliazeFreeType();
+
+        // Initiliaze key states
+        cg::UpdateInputStates();
     }
 
     void ToggleVSync(bool on){

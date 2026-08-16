@@ -3,7 +3,6 @@
 out vec4 FragColor;
 
 uniform sampler2D frameBuffer;
-uniform sampler2D noiseTex;
 
 // Settings
 uniform int raysPerPixel;
@@ -16,8 +15,14 @@ uniform bool enableFrameAccumulation;
 uniform int frame;
 uniform int randomValue;
 
+uniform float deltaTime;
+uniform float time;
+
 uniform vec3 cameraPos;
 uniform vec3 cameraLookAt;
+
+uniform bool enableWater;
+uniform float waterLevel;
 
 // Debug stats
 uniform int debugView;
@@ -106,6 +111,7 @@ uniform vec2 resolution;
 
 struct Ray {
     vec3 origin, direction, invDir;
+    bool underwater;
 };
 
 struct HitInfo {
@@ -150,6 +156,66 @@ vec2 RandomPointInCircle(inout uint seed){
 }
 
 /* RAY-SHAPE INTERSECTION FUNCTIONS */
+
+// Water: https://www.shadertoy.com/view/MdXyzX
+
+// Calculates wave value and its derivative,
+// for the wave direction, position in space, wave frequency and time
+vec2 wavedx(vec2 position, vec2 direction, float frequency, float timeshift) {
+    float x = dot(direction, position) * frequency + timeshift;
+    float wave = exp(sin(x) - 1.0);
+    float dx = wave * cos(x);
+    return vec2(wave, -dx);
+}
+
+// Calculates waves by summing octaves of various waves with various parameters
+float getwaves(vec2 position, int iterations) {
+    float wavePhaseShift = length(position) * 0.1; // this is to avoid every octave having exactly the same phase everywhere
+    float iter = 0.0; // this will help generating well distributed wave directions
+    float frequency = 1.0; // frequency of the wave, this will change every iteration
+    float timeMultiplier = 2.0; // time multiplier for the wave, this will change every iteration
+    float weight = 1.0;// weight in final sum for the wave, this will change every iteration
+    float sumOfValues = 0.0; // will store final sum of values
+    float sumOfWeights = 0.0; // will store final sum of weights
+    float dragMultiplier = 1.0;
+    for(int i=0; i < iterations; i++) {
+        // generate some wave direction that looks kind of random
+        vec2 p = vec2(sin(iter), cos(iter));
+
+        // calculate wave data
+        vec2 res = wavedx(position, p, frequency, time * timeMultiplier + wavePhaseShift);
+
+        // shift position around according to wave drag and derivative of the wave
+        position += p * res.y * weight * dragMultiplier;
+
+        // add the results to sums
+        sumOfValues += res.x * weight;
+        sumOfWeights += weight;
+
+        // modify next octave ;
+        weight = mix(weight, 0.0, 0.2);
+        frequency *= 1.18;
+        timeMultiplier *= 1.07;
+
+        // add some kind of random value to make next wave look random too
+        iter += 1232.399963;
+    }
+    // calculate and return
+    return sumOfValues / sumOfWeights;
+}
+
+// Calculate normal at point by calculating the height at the pos and 2 additional points very close to pos
+vec3 GetWaterNormal(vec2 pos, float e, float depth) {
+    vec2 ex = vec2(e, 0);
+    float H = getwaves(pos.xy, 16) * depth;
+    vec3 a = vec3(pos.x, H, pos.y);
+    return normalize(
+            cross(
+                    a - vec3(pos.x - e, getwaves(pos.xy - ex.xy, 16) * depth, pos.y),
+                    a - vec3(pos.x, getwaves(pos.xy + ex.yx, 16) * depth, pos.y + e)
+            )
+    );
+}
 
 // Box:             https://www.shadertoy.com/view/ld23DV
 void RayBoxIntersection(in Ray ray, in Box box, inout HitInfo hitInfo) {
@@ -342,49 +408,131 @@ void TestSpheres(in Ray ray, inout IntersectInfo result){
     }
 }
 
+bool TestWater(in Ray ray, inout IntersectInfo result){
+    // Ray-plane intersection
+    vec3 planeNormal = vec3(0.,1.,0.);
+    float planeDist = ray.origin.y - 1.;
+    float a = dot(ray.direction, planeNormal);
+    float d = -(dot(ray.origin, planeNormal)+planeDist)/a;
+    if (a <= 0.) {
+        vec3 pos = ray.origin;
+        const float depth = 1.0;
+        for (int i = 0; i < 64; i++){
+            float waterHeight = getwaves(pos.xz, 16) * depth - depth;
+            if (waterHeight + 0.01 > pos.y){
+                float dst = distance(pos, ray.origin);
+                if (dst >= result.dst) return false;
+                result.hit = true;
+                result.dst = dst;
+                result.intersectPos = pos;
+                result.normal = GetWaterNormal(pos.xz, 0.01, depth);
+
+                return true;
+            }
+            pos += ray.direction * (pos.y - waterHeight);
+        }
+    }
+    return false;
+}
+
+bool hitWater = false;
+bool tracingUnderWater = false;
+Ray refractedRay;
+
 vec3 GetSkyColor(vec3 rd){
-    float a = 0.5*(rd.y + 1.0);
+    if (tracingUnderWater) return vec3(0.);
+    float a = 0.7*(rd.y + 1.0);
     return (1.0-a)*vec3(1.0, 1.0, 1.0) + a*vec3(0.5, 0.7, 1.0);
 }
 
-vec3 RayTrace(in Ray ray, inout uint seed){
+#define ABSORPTION vec3(0.45, 0.10, 0.015)
+#define OUTSCATTER vec3(0.015, 0.01, 0.003)
+#define INSCATTER vec3(0.002, 0.02, 0.12)
+
+vec3 RayTrace(in Ray r, inout uint seed){
     vec3 incomingLight = vec3(0.);
     vec3 color = vec3(1.);
-    for (int bounce = 0; bounce <= maxBounces; bounce++){
-        IntersectInfo result;
-        result.hit = false;
-        result.dst = INF;
-        TestSpheres(ray, result);
-        TestMeshes(ray, result);
+    Ray rayStack[12];
+    int stackIndex = 0;
+    rayStack[stackIndex++] = r;
+    int maxRays = 2;
+    int rays = 1;
+    bool currentRayIsWaterReflection = false;
+    float fresnel;
+    while (stackIndex > 0){
+        Ray ray = rayStack[--stackIndex];
+        currentRayIsWaterReflection = false;
+        for (int bounce = 0; bounce <= maxBounces; bounce++){
+            IntersectInfo result;
+            result.hit = false;
+            result.dst = INF;
+            TestSpheres(ray, result);
+            TestMeshes(ray, result);
 
-        if (result.hit){
-            // If the ray hit a light source, add it's light to the ray. Also add the color of the material to the sum.
-            vec3 emittedLight = materials[result.materialIndex].emissionColor.rgb * materials[result.materialIndex].emissionColor.a;
-            incomingLight += color * emittedLight;
-            color *= materials[result.materialIndex].color;
+            if (enableWater && !ray.underwater && TestWater(ray, result)){
+                if (rays < maxRays){
+                    refractedRay.origin = result.intersectPos;
+                    refractedRay.direction = refract(ray.direction, result.normal, 1.0 / 1.333);
+                    refractedRay.invDir = 1.0 / refractedRay.direction;
+                    refractedRay.underwater = true;
 
-            // Stop tracing if the light is already really low.
-            float p = max(color.r, max(color.g, color.b));
-            //if (bounce > 5 && RandomValue(seed) < p) break;
+                    rayStack[stackIndex++] = refractedRay;
+                    rays++;
+                }
 
-            if (dot(result.normal, ray.direction) > 0) result.normal *= -1.0; // Normal must be wrong, so correct it
+                const float WATER_IOR = 1.333;
 
-            // Apply a small epsilon to make sure the ray doesn't hit the same object again
-            ray.origin = result.intersectPos + result.normal * 0.001;
+                float cosTheta = clamp(-dot(ray.direction, result.normal), 0.0, 1.0);
+                float F0 = pow((1.0 - WATER_IOR) / (1.0 + WATER_IOR), 2.0);
 
-            // Depending on the smoothness, bounce the ray back into the scene randomly or reflect it if the material is smooth.
-            vec3 randomDirection = normalize(result.normal + RandomPointInsideSphere(seed));
-            float smoothness = materials[result.materialIndex].smoothness;
-            if (smoothness == 0.0) ray.direction = randomDirection;
-            else ray.direction = mix(randomDirection, reflect(ray.direction, result.normal), smoothness);
-            ray.invDir = 1.0 / ray.direction;
-        } else {
-            incomingLight += GetSkyColor(ray.direction) * color;
-            break;
+                fresnel = F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+
+                ray.origin = result.intersectPos;
+                ray.direction = reflect(ray.direction, result.normal);
+                ray.invDir = 1.0 / ray.direction;
+
+                currentRayIsWaterReflection = true;
+
+                continue;
+            }
+
+            if (result.hit){
+                // If the ray hit a light source, add it's light to the ray. Also add the color of the material to the sum.
+                vec3 emittedLight = materials[result.materialIndex].emissionColor.rgb * materials[result.materialIndex].emissionColor.a;
+                vec3 materialColor = materials[result.materialIndex].color;
+                if (ray.underwater){
+                    float depth = distance(result.intersectPos, ray.origin);
+                    color *= exp(-(ABSORPTION + OUTSCATTER) * depth) * (1. - fresnel);
+                }
+                if (currentRayIsWaterReflection) emittedLight *= fresnel;
+                incomingLight += color * emittedLight;
+                color *= materialColor;
+
+                // Stop tracing if the light is already really low.
+                float p = max(color.r, max(color.g, color.b));
+                //if (bounce > 5 && RandomValue(seed) < p) break;
+
+                if (dot(result.normal, ray.direction) > 0) result.normal *= -1.0; // Normal must be wrong, so correct it
+
+                // Apply a small epsilon to make sure the ray doesn't hit the same object again
+                ray.origin = result.intersectPos + result.normal * 0.001;
+
+                // Depending on the smoothness, bounce the ray back into the scene randomly or reflect it if the material is smooth.
+                vec3 randomDirection = normalize(result.normal + RandomPointInsideSphere(seed));
+                float smoothness = materials[result.materialIndex].smoothness;
+                if (smoothness == 0.0) ray.direction = randomDirection;
+                else ray.direction = mix(randomDirection, reflect(ray.direction, result.normal), smoothness);
+                ray.invDir = 1.0 / ray.direction;
+            } else {
+                vec3 skyColor = GetSkyColor(ray.direction);
+                if (ray.underwater) incomingLight += (INSCATTER) * (1. / (1. - fresnel)) * 2;
+                else incomingLight += skyColor * color;
+                break;
+            }
         }
     }
     
-    return incomingLight;
+    return incomingLight / rays;
 }
 
 vec3 GetPixelColor(){
@@ -413,6 +561,7 @@ vec3 GetPixelColor(){
     for (int r = 0; r < raysPerPixel; r++) {
         Ray ray;
         ray.origin = ro;
+        ray.underwater = false;
 
         vec2 jitter = RandomPointInCircle(seed) * blurStrength / resolution.x;
         vec3 jitteredViewpoint = i + r * jitter.x + u * jitter.y;
@@ -423,7 +572,7 @@ vec3 GetPixelColor(){
         colorSum += RayTrace(ray, seed);
     }
 
-    vec3 col = colorSum / raysPerPixel;
+    vec3 col = colorSum / (raysPerPixel + int(hitWater));
     vec3 previousCol = texture(frameBuffer, texCoords).rgb;
     vec3 avg = (previousCol * frame + col) / (frame + 1);
 
