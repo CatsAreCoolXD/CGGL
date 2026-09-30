@@ -16,6 +16,7 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "CGGL/stb_image.h"
+#include "CGGL/draw.h"
 
 /* 
 VERTEX SHADER
@@ -103,6 +104,8 @@ namespace cg {
 
         GLuint usage = GL_DYNAMIC_DRAW;
 
+        int frame = 0;
+
         std::vector<std::pair<int, int>> expectedVectorSizes;
     }
 
@@ -189,11 +192,23 @@ namespace cg {
 
         // Always have 1 second of data
         if (fpsList.size() > 1.0 / deltaTime){
-            while (fpsList.size() > 1.0 / deltaTime - 1) fpsList.pop_back();
+            while (fpsList.size() > std::max(1.0 / deltaTime - 1, 1.0)) fpsList.pop_back();
             fpsList.insert(fpsList.begin(), 1.0 / deltaTime);
         } else fpsList.insert(fpsList.begin(), 1.0 / deltaTime);
 
         useTexture = false;
+
+        frame++;
+    }
+
+    bool IsFirstFrame(){
+        // Frame can only be 0 if the render loop hasn't started yet, therefore I just count as the first frame
+        return frame == 0 || frame == 1;
+    }
+
+    int GetFrameCount()
+    {
+        return frame;
     }
 
     size_t HashVertex(float* vertex, int size){
@@ -339,13 +354,18 @@ namespace cg {
         }
     }
 
-    void Draw(){
+    void SwapBuffers(){
+        glfwSwapBuffers(cg::GetWindow());
+    }
+
+    void Draw(bool swapBuffers){
         // Draw buffers
         for (cg::TriangleBuffer& buffer : triangleBuffers){
             cg::DrawTriangles(buffer);
         }
 
-        glfwSwapBuffers(cg::GetWindow());
+        if (swapBuffers)
+            glfwSwapBuffers(cg::GetWindow());
     }
 
     void Draw(cg::Texture& tex, int flags){
@@ -519,7 +539,13 @@ namespace cg {
         Texture::LoadImage(path, wrapping);
     }
 
-    void UseShaderProgram(){
+    Texture::~Texture()
+    {
+        glDeleteTextures(1, &textureId);
+    }
+
+    void UseShaderProgram()
+    {
         shaderProgram.Use();
     }
 

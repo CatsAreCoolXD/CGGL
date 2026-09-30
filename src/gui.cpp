@@ -49,7 +49,7 @@ namespace cg
 
         cg::Rectangle(bottomLeft, bottomRight - bottomLeft, FLAG_NO_BORDER | FLAG_USE_SECONDARY_COLOR);
         cg::Rectangle(topLeft, (topRight - topLeft) / 2.f - dimensions / 2.f, FLAG_NO_BORDER | FLAG_USE_SECONDARY_COLOR);
-        cg::Rectangle(topRight, ((topRight - topLeft) / 2.f - dimensions / 2.f) * -1.f, FLAG_NO_BORDER | FLAG_USE_SECONDARY_COLOR);
+        cg::Rectangle(topRight + cg::Vec2f(0.f, borderThickness), (((topRight + cg::Vec2f(0.f, borderThickness)) - (topLeft - cg::Vec2f(0.f, borderThickness))) / 2.f - dimensions / 2.f) * -1.f, FLAG_NO_BORDER | FLAG_USE_SECONDARY_COLOR);
 
         bottomRight = bottomRight - cg::Vec2f(0.f, borderThickness);
 
@@ -118,6 +118,10 @@ namespace cg
         GUI_REQUIRE_SECTION("GUISetMargin()")
 
         currentSection->SetMargin(margin);
+    }
+
+    void GUIOffset(cg::Vec2f offset) {
+        currentSection->currentPos = currentSection->currentPos + offset;
     }
 
     /* GUI ELEMENTS */

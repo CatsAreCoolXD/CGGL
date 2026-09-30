@@ -91,6 +91,7 @@ namespace cg {
     }
 
     char KeyToChar(int key) {
+        if (key == KEY_SLASH) return '/';
         bool caps = !cg::IsKeyDown(KEY_LSHIFT);
         if (key <= KEY_LAST_PRINTABLE) return (char)key + caps * 32;
         return ' ';

@@ -35,21 +35,26 @@ namespace cg {
                 std::cout << "Failed to load glyph " << c << std::endl;
             }
 
-            cg::Texture tex;
-            tex.LoadGlyph(face);
-            tex.FlipVertically();
-            tex.offset.y = -1.f;
+            FontCharacter* fontCharacter = new FontCharacter();
+            cg::Texture* tex = new cg::Texture();
+            tex->LoadGlyph(face);
+            tex->FlipVertically();
+            tex->offset.y = -1.f;
+            fontCharacter->tex = tex;
+            fontCharacter->advance = face->glyph->advance.x;
+            fontCharacter->size = cg::Vec2f(face->glyph->bitmap.width, face->glyph->bitmap.rows);
+            fontCharacter->bearing = cg::Vec2f(face->glyph->bitmap_left, face->glyph->bitmap_top);
 
-            FontCharacter fontCharacter;
-            fontCharacter.tex = tex;
-            fontCharacter.advance = face->glyph->advance.x;
-            fontCharacter.size = cg::Vec2f(face->glyph->bitmap.width, face->glyph->bitmap.rows);
-            fontCharacter.bearing = cg::Vec2f(face->glyph->bitmap_left, face->glyph->bitmap_top);
-
-            characterMap.insert(std::pair<char, FontCharacter>(c, fontCharacter));
+            characterMap.insert(std::pair<char, FontCharacter*>(c, fontCharacter));
         }
 
         FT_Done_Face(face);
+    }
+
+    Font::~Font(){
+        for (auto& p : characterMap){
+            delete p.second;
+        }
     }
 
     void PushFont(cg::Font& font){
@@ -75,15 +80,15 @@ namespace cg {
 
         int i = 0;
         for (char& c : text){
-            cg::FontCharacter& fontCharacter = font->characterMap[c];
-            cg::Texture& tex = fontCharacter.tex;
-            tex.SetTint(flag & FLAG_USE_SECONDARY_COLOR ? cg::GetCurrentStyle().secondaryColor : cg::GetCurrentStyle().primaryColor);
-            int x = pos.x + fontCharacter.bearing.x;
-            int y = pos.y - (fontCharacter.size.y - fontCharacter.bearing.y);
-            tex.SetOrigin(cg::Vec2f(x, y));
-            cg::Draw(tex, FLAG_NO_BORDER);
+            cg::FontCharacter* fontCharacter = font->characterMap[c];
+            cg::Texture* tex = fontCharacter->tex;
+            tex->SetTint(flag & FLAG_USE_SECONDARY_COLOR ? cg::GetCurrentStyle().secondaryColor : cg::GetCurrentStyle().primaryColor);
+            int x = pos.x + fontCharacter->bearing.x;
+            int y = pos.y - (fontCharacter->size.y - fontCharacter->bearing.y);
+            tex->SetOrigin(cg::Vec2f(x, y));
+            cg::Draw(*tex, FLAG_NO_BORDER);
 
-           pos.x += fontCharacter.advance >> 6; // Bitshift by 6 to divide by 64, since advance is in 1/64 pixels
+           pos.x += fontCharacter->advance >> 6; // Bitshift by 6 to divide by 64, since advance is in 1/64 pixels
         }
     }
 
@@ -92,9 +97,9 @@ namespace cg {
 
         cg::Vec2f size;
         for (char& c : text){
-            cg::FontCharacter& fontCharacter = font->characterMap[c];
-            size.x += fontCharacter.size.x + ((fontCharacter.advance >> 6) - fontCharacter.size.x);
-            size.y = std::max(size.y, (float)fontCharacter.size.y);
+            cg::FontCharacter* fontCharacter = font->characterMap[c];
+            size.x += fontCharacter->size.x + ((fontCharacter->advance >> 6) - fontCharacter->size.x);
+            size.y = std::max(size.y, (float)fontCharacter->size.y);
         }
         return size;
     }

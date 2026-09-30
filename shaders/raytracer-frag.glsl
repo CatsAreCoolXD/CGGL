@@ -440,7 +440,7 @@ bool tracingUnderWater = false;
 Ray refractedRay;
 
 vec3 GetSkyColor(vec3 rd){
-    if (tracingUnderWater) return vec3(0.);
+    return vec3(0.);
     float a = 0.7*(rd.y + 1.0);
     return (1.0-a)*vec3(1.0, 1.0, 1.0) + a*vec3(0.5, 0.7, 1.0);
 }
@@ -572,7 +572,7 @@ vec3 GetPixelColor(){
         colorSum += RayTrace(ray, seed);
     }
 
-    vec3 col = colorSum / (raysPerPixel + int(hitWater));
+    vec3 col = colorSum / (raysPerPixel);
     vec3 previousCol = texture(frameBuffer, texCoords).rgb;
     vec3 avg = (previousCol * frame + col) / (frame + 1);
 
