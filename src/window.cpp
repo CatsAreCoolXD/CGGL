@@ -28,37 +28,60 @@ namespace cg {
     }
 
     void Initialize(std::string windowName, cg::Vec2i size, cg::WindowSettings settings){
+        // Disable libdecor to hide window title bar and borders
+        if (settings.windowMode == WINDOW_MODE_WINDOWED_BORDERLESS || settings.windowMode == WINDOW_MODE_FULLSCREEN_BORDERLESS)
+            glfwInitHint(GLFW_WAYLAND_LIBDECOR, GLFW_WAYLAND_DISABLE_LIBDECOR);
+
         if (!glfwInit()){
             throw std::runtime_error("Couldn't initialize GLFW");
         }
 
         glfwWindowHint(GLFW_RESIZABLE, settings.resizable);
         glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
+        glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
 
         if (settings.antiAliasing){
             glfwWindowHint(GLFW_SAMPLES, settings.antiAliasingLevel);
         }
 
-        if (settings.windowMode == WINDOW_MODE_WINDOWED) window = glfwCreateWindow(size.x, size.y, windowName.c_str(), NULL, NULL);
-        else if (settings.windowMode == WINDOW_MODE_FULLSCREEN) window = glfwCreateWindow(size.x, size.y, windowName.c_str(), glfwGetPrimaryMonitor(), NULL); 
-        else if (settings.windowMode == WINDOW_MODE_FULLSCREEN_BORDERLESS){
-            const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
- 
-            glfwWindowHint(GLFW_RED_BITS, mode->redBits);
-            glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
-            glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
-            glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
+        // Create window based on window mode
+        switch (settings.windowMode)
+        {
+            case WINDOW_MODE_WINDOWED_BORDERLESS:
+                glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+            case WINDOW_MODE_WINDOWED:
+                window = glfwCreateWindow(size.x, size.y, windowName.c_str(), NULL, NULL);
+                break;
 
-            window = glfwCreateWindow(mode->width, mode->height, windowName.c_str(), glfwGetPrimaryMonitor(), NULL); 
+            case WINDOW_MODE_FULLSCREEN_BORDERLESS: {
+                const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+    
+                glfwWindowHint(GLFW_RED_BITS, mode->redBits);
+                glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
+                glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
+                glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
+
+                window = glfwCreateWindow(mode->width, mode->height, windowName.c_str(), glfwGetPrimaryMonitor(), NULL); 
+                break;
+            }
+
+            case WINDOW_MODE_FULLSCREEN:
+                window = glfwCreateWindow(size.x, size.y, windowName.c_str(), glfwGetPrimaryMonitor(), NULL);
+                break;
+            
+            default:
+                throw std::runtime_error("Invalid window mode!");
+                break;
         }
+
         if (!window){
             glfwTerminate();
-            throw std::runtime_error("Couldn't open window");
+            throw std::runtime_error("Couldn't open GLFW window!");
         }
         glfwMakeContextCurrent(window);
 
         if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)){
-            throw std::runtime_error("Couldn't load OpenGL function pointers");
+            throw std::runtime_error("Couldn't load OpenGL function pointers!");
         }
 
         if (settings.antiAliasing)
