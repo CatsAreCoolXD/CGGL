@@ -33,6 +33,8 @@ namespace cg {
     void SemiCircle(cg::Vec2f center, int radius, int direction, unsigned int flags = 0);
     void UnfilledSemiCircle(cg::Vec2f center, int radius, int direction, int thickness, unsigned int flags = 0);
 
+    void Line(cg::Vec2f a, cg::Vec2f b, float size, unsigned int flags = 0);
+
     void Triangle(cg::Vertex* vertices);
     void Triangle3D(cg::Vertex* vertices);
 }

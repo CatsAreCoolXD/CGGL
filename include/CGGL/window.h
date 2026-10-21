@@ -1,5 +1,5 @@
-#ifndef WINDOW_H
-#define WINDOW_H
+#ifndef CGGL_WINDOW_H
+#define CGGL_WINDOW_H
 
 #include <string>
 
@@ -20,7 +20,6 @@
 #define WINDOW_MODE_FULLSCREEN_BORDERLESS 2
 
 #define WINDOW_FLAG_RESIZABLE 1u
-#define WINDOW_FLAG_
 
 namespace cg {
     struct WindowSettings {

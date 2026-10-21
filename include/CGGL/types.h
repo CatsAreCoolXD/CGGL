@@ -1,5 +1,5 @@
-#ifndef DG_MATH_H
-#define DG_MATH_H
+#ifndef CGGL_TYPES_H
+#define CGGL_TYPES_H
 
 #include <iostream>
 #include <algorithm>
@@ -38,6 +38,10 @@ namespace cg {
                 return (*this) / Vec2::Length();
             }
 
+            Vec2<T> Right() {
+                return Vec2<T>(y, -x);
+            }
+
             float Dot(Vec2 other){
                 return x * other.x + y * other.y;
             }
@@ -64,6 +68,10 @@ namespace cg {
             template<typename U>
             bool operator==(const Vec2<U>& other) const {
                 return x == other.x && y == other.y;
+            }
+
+            Vec2<T> operator-() {
+                return Vec2<T>(-x,-y);
             }
 
             T x, y;
@@ -226,6 +234,11 @@ namespace cg {
     template<typename T>
     void PrintVector(Vec3<T> v){
         std::cout << "(" << v.x << ", " << v.y << ", " << v.z << ")" << std::endl;
+    }
+
+    template<typename T>
+    void PrintVector(Vec2<T> v){
+        std::cout << "(" << v.x << ", " << v.y << ")" << std::endl;
     }
 
     class Color {

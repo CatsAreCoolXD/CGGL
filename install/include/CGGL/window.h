@@ -20,7 +20,6 @@
 #define WINDOW_MODE_FULLSCREEN_BORDERLESS 2
 
 #define WINDOW_FLAG_RESIZABLE 1u
-#define WINDOW_FLAG_
 
 namespace cg {
     struct WindowSettings {

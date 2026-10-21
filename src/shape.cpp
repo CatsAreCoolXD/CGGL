@@ -221,6 +221,29 @@ namespace cg {
         }
     }
 
+    void Line(cg::Vec2f a, cg::Vec2f b, float size, unsigned int flags){
+        const cg::Style style = cg::GetCurrentStyle();
+        const cg::Color color = flags & FLAG_USE_SECONDARY_COLOR ? style.secondaryColor : style.primaryColor;
+
+        cg::Vec2f dir = (b - a).Normalized();
+        cg::Vec2f right = dir.Right();
+
+        cg::Vertex tri1[3] = {
+            cg::Vertex(a + right * size, color),
+            cg::Vertex(a - right * size, color),
+            cg::Vertex(b + right * size, color)
+        };
+
+        cg::Vertex tri2[3] = {
+            cg::Vertex(b + right * size, color),
+            cg::Vertex(b - right * size, color),
+            cg::Vertex(a - right * size, color)
+        };
+
+        cg::Triangle(tri1);
+        cg::Triangle(tri2);
+    }
+
     void Triangle(cg::Vertex* vertices){
         // Convert pixel positions to normalized device coordinates (NDC) and convert color values from 0-255 to 0-1
         int width, height;

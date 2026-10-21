@@ -1,5 +1,5 @@
-#ifndef SCENE_H
-#define SCENE_H
+#ifndef CGGL_SCENE_H
+#define CGGL_SCENE_H
 
 #include "types.h"
 
