@@ -1,5 +1,5 @@
-#ifndef INPUT_H
-#define INPUT_H
+#ifndef CGGL_INPUT_H
+#define CGGL_INPUT_H
 
 #include "window.h"
 

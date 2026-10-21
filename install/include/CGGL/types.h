@@ -1,5 +1,5 @@
-#ifndef DG_MATH_H
-#define DG_MATH_H
+#ifndef CGGL_TYPES_H
+#define CGGL_TYPES_H
 
 #include <iostream>
 #include <algorithm>

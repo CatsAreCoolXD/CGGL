@@ -161,10 +161,10 @@ namespace cg {
         if (radius == 0) return;
         cg::Vec2f center = flags & FLAG_CENTERED ? pos : (pos + cg::Vec2f(radius / 2.f, radius / 2.f));
 
-        cg::UnfilledSemiCircle(center, radius, thickness, TOP_RIGHT, flags);
-        cg::UnfilledSemiCircle(center, radius, thickness, BOTTOM_RIGHT, flags);
-        cg::UnfilledSemiCircle(center, radius, thickness, BOTTOM_LEFT, flags);
-        cg::UnfilledSemiCircle(center, radius, thickness, TOP_LEFT, flags);
+        cg::UnfilledSemiCircle(center, radius, TOP_RIGHT, thickness, flags);
+        cg::UnfilledSemiCircle(center, radius, BOTTOM_RIGHT, thickness, flags);
+        cg::UnfilledSemiCircle(center, radius, BOTTOM_LEFT, thickness, flags);
+        cg::UnfilledSemiCircle(center, radius, TOP_LEFT, thickness, flags);
     }
 
     void SemiCircle(cg::Vec2f center, int radius, int direction, unsigned int flags){

@@ -33,6 +33,7 @@ namespace cg {
         }
 
         glfwWindowHint(GLFW_RESIZABLE, settings.resizable);
+        glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
 
         if (settings.antiAliasing){
             glfwWindowHint(GLFW_SAMPLES, settings.antiAliasingLevel);

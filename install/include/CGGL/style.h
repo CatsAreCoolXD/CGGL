@@ -1,5 +1,5 @@
-#ifndef DG_STYLE_H
-#define DG_STYLE_H
+#ifndef CGGL_STYLE_H
+#define CGGL_STYLE_H
 
 #include "types.h"
 

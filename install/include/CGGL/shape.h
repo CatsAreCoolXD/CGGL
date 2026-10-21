@@ -1,5 +1,5 @@
-#ifndef SHAPE_H
-#define SHAPE_H
+#ifndef CGGL_SHAPE_H
+#define CGGL_SHAPE_H
 
 #include "types.h"
 

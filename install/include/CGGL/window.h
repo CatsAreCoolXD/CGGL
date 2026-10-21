@@ -1,5 +1,5 @@
-#ifndef WINDOW_H
-#define WINDOW_H
+#ifndef CGGL_WINDOW_H
+#define CGGL_WINDOW_H
 
 #include <string>
 

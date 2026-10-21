@@ -1,5 +1,5 @@
-#ifndef GUI_H
-#define GUI_H
+#ifndef CGGL_GUI_H
+#define CGGL_GUI_H
 
 #include "types.h"
 

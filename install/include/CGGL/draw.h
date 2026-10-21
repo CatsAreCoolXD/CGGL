@@ -1,5 +1,5 @@
-#ifndef DRAW_H
-#define DRAW_H
+#ifndef CGGL_DRAW_H
+#define CGGL_DRAW_H
 
 #include <unordered_map>
 
