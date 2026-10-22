@@ -51,12 +51,6 @@ namespace cg {
         FT_Done_Face(face);
     }
 
-    Font::~Font(){
-        for (auto& p : characterMap){
-            delete p.second;
-        }
-    }
-
     void PushFont(cg::Font& font){
         fontStack.push(&font);
     }
@@ -76,7 +70,14 @@ namespace cg {
 
     void Text(std::string text, cg::Vec2f pos, unsigned int flag){
         if (flag & FLAG_CENTERED) pos = pos - cg::MeasureText(text) / 2.f;
+
+        if (fontStack.empty())
+            throw std::runtime_error("Font stack is empty, did you forget to load a font?");
+            
         cg::Font* font = fontStack.top();
+
+        if (!font)
+            throw std::runtime_error("Invalid font!");
 
         int i = 0;
         for (char& c : text){

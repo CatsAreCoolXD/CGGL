@@ -26,6 +26,9 @@ namespace cg {
         glfwGetWindowSize(window, &w, &h);
         return cg::Vec2i(w,h);
     }
+    
+    float GetWindowWidth() { return GetWindowSize().x; }
+    float GetWindowHeight() { return GetWindowSize().y; }
 
     void Initialize(std::string windowName, cg::Vec2i size, cg::WindowSettings settings){
         // Disable libdecor to hide window title bar and borders

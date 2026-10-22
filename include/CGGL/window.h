@@ -30,6 +30,8 @@ namespace cg {
     };
 
     cg::Vec2i GetWindowSize();
+    float GetWindowWidth();
+    float GetWindowHeight();
 
     // Initialize CGGL.
     void Initialize(std::string windowName = "CGGL Window", cg::Vec2i size = cg::Vec2i{1920, 1080}, cg::WindowSettings settings = cg::WindowSettings());

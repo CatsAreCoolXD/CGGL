@@ -28,8 +28,6 @@ namespace cg
             Font() {}
             Font(const char* path, int fontSize);
 
-            ~Font();
-
             int GetFontSize() const { return fontSize; }
 
             void LoadFont(const char* path);
