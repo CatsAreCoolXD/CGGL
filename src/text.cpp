@@ -5,6 +5,7 @@
 #include "CGGL/style.h"
 
 #include <iostream>
+#include <sstream>
 
 namespace cg {
     namespace {
@@ -68,8 +69,8 @@ namespace cg {
         return fontStack.top();
     }
 
-    void Text(std::string text, cg::Vec2f pos, unsigned int flag){
-        if (flag & FLAG_CENTERED) pos = pos - cg::MeasureText(text) / 2.f;
+    void Text(std::string text, const cg::Vec2f& pos, unsigned int flag){
+        cg::Vec2f textPos = pos;
 
         if (fontStack.empty())
             throw std::runtime_error("Font stack is empty, did you forget to load a font?");
@@ -79,17 +80,37 @@ namespace cg {
         if (!font)
             throw std::runtime_error("Invalid font!");
 
+        std::stringstream ss(text);
+        std::string batch;
+        std::getline(ss, batch, '\n');
+
+        int amountOfNewLines = 0;
+        for (char& c : text) if (c == '\n') amountOfNewLines++;
+
+        if (flag & FLAG_CENTERED) {
+            textPos = pos - cg::MeasureText(batch) / 2.f + cg::Vec2f(0.f, amountOfNewLines * font->GetFontSize()) / 2.f;
+        }
+
         int i = 0;
         for (char& c : text){
+            if (c == '\n') {
+                textPos.x = pos.x;
+                std::getline(ss, batch, '\n');
+                if (flag & FLAG_CENTERED) textPos = pos - cg::MeasureText(batch) / 2.f + cg::Vec2f(0.f, amountOfNewLines * font->GetFontSize()) / 2.f;
+                textPos.y -= font->GetFontSize();
+
+                continue;
+            }
+
             cg::FontCharacter* fontCharacter = font->characterMap[c];
             cg::Texture* tex = fontCharacter->tex;
             tex->SetTint(flag & FLAG_USE_SECONDARY_COLOR ? cg::GetCurrentStyle().secondaryColor : cg::GetCurrentStyle().primaryColor);
-            int x = pos.x + fontCharacter->bearing.x;
-            int y = pos.y - (fontCharacter->size.y - fontCharacter->bearing.y);
+            int x = textPos.x + fontCharacter->bearing.x;
+            int y = textPos.y - (fontCharacter->size.y - fontCharacter->bearing.y);
             tex->SetOrigin(cg::Vec2f(x, y));
             cg::Draw(*tex, FLAG_NO_BORDER);
 
-           pos.x += fontCharacter->advance >> 6; // Bitshift by 6 to divide by 64, since advance is in 1/64 pixels
+           textPos.x += fontCharacter->advance >> 6; // Bitshift by 6 to divide by 64, since advance is in 1/64 pixels
         }
     }
 

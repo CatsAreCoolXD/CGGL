@@ -37,7 +37,7 @@ namespace cg
             FT_Face face;
     };
 
-    void Text(std::string text, cg::Vec2f pos, unsigned int flag = 0u);
+    void Text(std::string text, const cg::Vec2f& pos, unsigned int flag = 0u);
     cg::Vec2f MeasureText(std::string text);
 
     void PushFont(cg::Font& font);
