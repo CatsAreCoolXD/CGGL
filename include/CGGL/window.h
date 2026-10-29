@@ -22,6 +22,12 @@
 
 #define WINDOW_FLAG_RESIZABLE 1u
 
+#define CGGL_CONFIG_QUIT_ON_KEY_ESCAPE 0
+#define CGGL_CONFIG_VSYNC 1
+
+#define CGGL_CONFIG_FIRST CGGL_CONFIG_QUIT_ON_KEY_ESCAPE
+#define CGGL_CONFIG_LAST CGGL_CONFIG_VSYNC
+
 namespace cg {
     struct WindowSettings {
         bool resizable = false, antiAliasing = false;
@@ -36,7 +42,7 @@ namespace cg {
     // Initialize CGGL.
     void Initialize(std::string windowName = "CGGL Window", cg::Vec2i size = cg::Vec2i{1920, 1080}, cg::WindowSettings settings = cg::WindowSettings());
 
-    void ToggleVSync(bool on);
+    void SetConfig(int option, bool value);
 
     GLFWwindow* GetWindow();
     

@@ -22,6 +22,7 @@ namespace cg {
         Texture() = default;
         Texture(const char* path, int wrapping = REPEAT);
 
+        void Free();
         ~Texture();
 
         void LoadImage(const char* path, int wrapping = REPEAT);

@@ -19,6 +19,8 @@ namespace cg {
         {
             glViewport(0, 0, width, height);
         }
+
+        std::vector<bool> options;
     }
 
     cg::Vec2i GetWindowSize(){
@@ -105,10 +107,22 @@ namespace cg {
 
         // Initiliaze key states
         cg::UpdateInputStates();
+
+        options.resize(CGGL_CONFIG_LAST, false);
     }
 
-    void ToggleVSync(bool on){
-        glfwSwapInterval(on);
+    void SetConfig(int option, bool value){
+        options[option] = value;
+
+        switch (option)
+        {
+            case CGGL_CONFIG_VSYNC:
+                glfwSwapInterval(value);
+                break;
+            
+            default:
+                break;
+        }
     }
 
     GLFWwindow* GetWindow() {
@@ -116,7 +130,7 @@ namespace cg {
     }
 
     bool WindowIsOpen(){
-        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) // Quit if the escape key was pressed
+        if (options[CGGL_CONFIG_QUIT_ON_KEY_ESCAPE] && glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) // Quit if the escape key was pressed
             glfwSetWindowShouldClose(window, true);
         return !glfwWindowShouldClose(window);
     }

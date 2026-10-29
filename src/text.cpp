@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <sstream>
+#include "CGGL/text.h"
 
 namespace cg {
     namespace {
@@ -52,7 +53,15 @@ namespace cg {
         FT_Done_Face(face);
     }
 
-    void PushFont(cg::Font& font){
+    void Font::Free()
+    {
+        for (auto& character : characterMap){
+            character.second->tex->Free();
+        }
+    }
+
+    void PushFont(cg::Font &font)
+    {
         fontStack.push(&font);
     }
 

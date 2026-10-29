@@ -375,10 +375,16 @@ namespace cg {
     }
 
     void Draw(cg::Texture& tex, cg::Vec2f origin, cg::Vec2f size, int flags){
+        cg::Vec2f ogOrigin = tex.GetOrigin();
+        cg::Vec2f ogSize = tex.GetSize();
+
         tex.SetOrigin(origin);
         tex.SetSize(size);
 
         cg::Draw(tex, flags);
+
+        tex.SetOrigin(ogOrigin);
+        tex.SetSize(ogSize);
     }
 
     void Draw(cg::Scene& scene, cg::Vec3f cameraPos, cg::Vec3f cameraLookAt){
@@ -537,6 +543,10 @@ namespace cg {
 
     Texture::Texture(const char* path, int wrapping) {
         Texture::LoadImage(path, wrapping);
+    }
+
+    void Texture::Free(){
+        glDeleteTextures(1, &textureId);
     }
 
     Texture::~Texture()

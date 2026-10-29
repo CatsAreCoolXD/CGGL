@@ -29,8 +29,8 @@ namespace cg
             Font(const char* path, int fontSize);
 
             int GetFontSize() const { return fontSize; }
-
             void LoadFont(const char* path);
+            void Free();
             std::map<char, FontCharacter*> characterMap;
         private:
             int fontSize;
