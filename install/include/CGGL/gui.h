@@ -6,44 +6,14 @@
 #define HOVER_COLOR_SCALE_FACTOR 0.8f
 
 namespace cg {
-    class GUISection {
-        public:
-            GUISection() {}
-            GUISection(std::string title, cg::Vec2f pos, cg::Vec2f size);
-
-            void IncrementCurrentPosition(cg::Vec2f increment, bool& sameLine);
-            cg::Vec2f GetCurrentPos() const;
-            int GetSpacing() const { return spacing; }
-            cg::Vec2f GetSize() const { return size; }
-
-            void SetSpacing(int spacing);
-            void SetMargin(int margin);
-
-            cg::Vec2f currentPos;
-        private:
-            cg::Vec2f pos, size, lastIncrement;
-            int spacing = 10, margin = 10;
-    };
-
-    // Section
-    cg::GUISection* GUIStartSection(std::string title = "", cg::Vec2f pos = cg::Vec2f(-1,-1), cg::Vec2f size = cg::Vec2f(-1,-1));
-    void GUIEndSection();
-    
-    void GUISameLine();
-
-    void GUISetSpacing(int spacing);
-    void GUISetMargin(int margin);
-    void GUIOffset(cg::Vec2f offset);
-    
     // GUI Elements
-    void GUIText(std::string text, unsigned int flags = 0);
-    bool GUIButton(std::string text, unsigned int flags = 0);
+    bool GUIButton(std::string text, cg::Vec2f pos, cg::Vec2f size, unsigned int flags = 0);
 
     template <typename T>
-    bool GUISlider(std::string text, T& value, T min = 0.f, T max = 0.f, float scale = 1.f);
+    bool GUISlider(std::string text, cg::Vec2f pos, cg::Vec2f size, T& value, T min = 0.f, T max = 0.f, float scale = 1.f);
 
-    void GUICheckBox(std::string text, bool& value);
-    bool GUIInputBox(std::string name, std::string& text, unsigned int flags = 0);
+    void GUICheckBox(std::string text, bool& value, cg::Vec2f pos, cg::Vec2f size);
+    bool GUIInputBox(std::string name, std::string& text, cg::Vec2f pos, cg::Vec2f size, unsigned int flags = 0);
 }
 
 #endif

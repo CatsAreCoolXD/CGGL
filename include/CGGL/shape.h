@@ -35,8 +35,8 @@ namespace cg {
 
     void Line(cg::Vec2f a, cg::Vec2f b, float size, unsigned int flags = 0);
 
-    void Triangle(cg::Vertex* vertices);
-    void Triangle3D(cg::Vertex* vertices);
+    void Triangle(cg::Vertex* vertices, bool autoTexCoords = true);
+    void Triangle3D(cg::Vertex* vertices, bool autoTexCoords = true);
 }
 
 #endif

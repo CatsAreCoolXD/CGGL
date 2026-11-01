@@ -6,6 +6,10 @@ project(CGGL
     LANGUAGES CXX
 )
 
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/install" CACHE PATH "" FORCE)
+endif()
+
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 

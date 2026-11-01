@@ -59,7 +59,7 @@ endif()
 add_library(CGGL::CGGL STATIC IMPORTED)
 
 set_target_properties(CGGL::CGGL PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "CGGL_SHADER_DIR=\"/var/home/dkooistra/Documents/C++/CGGL/shaders\""
+  INTERFACE_COMPILE_DEFINITIONS "CGGL_SHADER_DIR=\"/home/dkooistra/Documents/C++/CGGL/shaders\""
   INTERFACE_COMPILE_FEATURES "cxx_std_20"
   INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;${_IMPORT_PREFIX}/include"
   INTERFACE_LINK_LIBRARIES "CGGL::glfw;CGGL::glad;CGGL::glm;CGGL::freetype"

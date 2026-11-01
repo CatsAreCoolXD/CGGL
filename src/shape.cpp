@@ -244,7 +244,7 @@ namespace cg {
         cg::Triangle(tri2);
     }
 
-    void Triangle(cg::Vertex* vertices){
+    void Triangle(cg::Vertex* vertices, bool autoTexCoords){
         // Convert pixel positions to normalized device coordinates (NDC) and convert color values from 0-255 to 0-1
         int width, height;
         glfwGetWindowSize(cg::GetWindow(), &width, &height);
@@ -261,14 +261,17 @@ namespace cg {
             vertices3D[i].color.g = (float)vertices[i].color.g / 255.f;
             vertices3D[i].color.b = (float)vertices[i].color.b / 255.f;
             vertices3D[i].color.a = (float)vertices[i].color.a / 255.f;
+
+            vertices3D[i].texCoords.x = vertices[i].texCoords.x;
+            vertices3D[i].texCoords.y = vertices[i].texCoords.y;
         }
         
-        cg::Triangle3D(vertices3D);
+        cg::Triangle3D(vertices3D, autoTexCoords);
     }
 
     /* 3d shapes */
 
-    void Triangle3D(cg::Vertex* vertices){
+    void Triangle3D(cg::Vertex* vertices, bool autoTexCoords){
         // Convert vectors to an array
         if (!cg::IsUsingTexture()){
             float triangle[21];
@@ -301,11 +304,16 @@ namespace cg {
                 triangle[i * 9 + 5] = cg::clamp01(tint.b / 255.f);
                 triangle[i * 9 + 6] = cg::clamp01(tint.a / 255.f);
 
-                triangle[i * 9 + 7] = (triangle[i * 9 + 0] - texOrigin.x) / texSize.x + offset.x;
-                triangle[i * 9 + 8] = (triangle[i * 9 + 1] - texOrigin.y) / texSize.y + offset.y;
-                if (flip.y == 1.f) triangle[i * 9 + 8] *= -1.f;
-                if (renderingGlyph && triangle[i * 9 + 7] < 0.01f) triangle[i * 9 + 7] = 0.0f;
-                if (renderingGlyph && triangle[i * 9 + 8] < 0.01f) triangle[i * 9 + 8] = 0.0f;
+                if (autoTexCoords){
+                    triangle[i * 9 + 7] = (triangle[i * 9 + 0] - texOrigin.x) / texSize.x + offset.x;
+                    triangle[i * 9 + 8] = (triangle[i * 9 + 1] - texOrigin.y) / texSize.y + offset.y;
+                    if (flip.y == 1.f) triangle[i * 9 + 8] *= -1.f;
+                    if (renderingGlyph && triangle[i * 9 + 7] < 0.01f) triangle[i * 9 + 7] = 0.0f;
+                    if (renderingGlyph && triangle[i * 9 + 8] < 0.01f) triangle[i * 9 + 8] = 0.0f;
+                } else {
+                    triangle[i * 9 + 7] = vertices[i].texCoords.x;
+                    triangle[i * 9 + 8] = vertices[i].texCoords.y;
+                }
             }
             cg::PushTriangle(triangle);
         }
