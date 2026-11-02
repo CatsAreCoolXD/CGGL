@@ -43,6 +43,7 @@ namespace cg {
     void Initialize(std::string windowName = "CGGL Window", cg::Vec2i size = cg::Vec2i{1920, 1080}, cg::WindowSettings settings = cg::WindowSettings());
 
     void SetConfig(int option, bool value);
+    bool GetConfig(int option);
 
     GLFWwindow* GetWindow();
     

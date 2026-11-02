@@ -180,7 +180,8 @@ namespace cg {
         cg::UpdateInputStates();
 
         // Max frames per second
-        while (true){
+        bool vsync = cg::GetConfig(CGGL_CONFIG_VSYNC);
+        while (vsync){
             double now = glfwGetTime();
             if (now - lastFrameTimePoint > 1.0 / (double)framerateLimit)
                 break;

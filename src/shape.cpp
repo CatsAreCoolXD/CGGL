@@ -251,22 +251,21 @@ namespace cg {
 
         if (width == 0 || height == 0) return;
 
-        cg::Vertex vertices3D[3];
         for (int i = 0; i < 3; i++){
-            vertices3D[i].pos.x = ((float)vertices[i].pos.x / (float)width - 0.5f) * 2.f;
-            vertices3D[i].pos.y = ((float)vertices[i].pos.y / (float)height - 0.5f) * 2.f;
-            vertices3D[i].pos.z = 0.f; // 2D triangle so set the z value to zero
+            vertices[i].pos.x = ((float)vertices[i].pos.x / (float)width - 0.5f) * 2.f;
+            vertices[i].pos.y = ((float)vertices[i].pos.y / (float)height - 0.5f) * 2.f;
+            vertices[i].pos.z = 0.f; // 2D triangle so set the z value to zero
 
-            vertices3D[i].color.r = (float)vertices[i].color.r / 255.f;
-            vertices3D[i].color.g = (float)vertices[i].color.g / 255.f;
-            vertices3D[i].color.b = (float)vertices[i].color.b / 255.f;
-            vertices3D[i].color.a = (float)vertices[i].color.a / 255.f;
+            vertices[i].color.r = (float)vertices[i].color.r / 255.f;
+            vertices[i].color.g = (float)vertices[i].color.g / 255.f;
+            vertices[i].color.b = (float)vertices[i].color.b / 255.f;
+            vertices[i].color.a = (float)vertices[i].color.a / 255.f;
 
-            vertices3D[i].texCoords.x = vertices[i].texCoords.x;
-            vertices3D[i].texCoords.y = vertices[i].texCoords.y;
+            vertices[i].texCoords.x = vertices[i].texCoords.x;
+            vertices[i].texCoords.y = vertices[i].texCoords.y;
         }
         
-        cg::Triangle3D(vertices3D, autoTexCoords);
+        cg::Triangle3D(vertices, autoTexCoords);
     }
 
     /* 3d shapes */

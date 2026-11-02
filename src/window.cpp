@@ -7,6 +7,7 @@
 #include "CGGL/draw.h"
 #include "CGGL/input.h"
 #include "CGGL/text.h"
+#include "CGGL/window.h"
 
 namespace cg {
     namespace {
@@ -125,7 +126,13 @@ namespace cg {
         }
     }
 
-    GLFWwindow* GetWindow() {
+    bool GetConfig(int option)
+    {
+        return options[option];
+    }
+
+    GLFWwindow *GetWindow()
+    {
         return window;
     }
 
