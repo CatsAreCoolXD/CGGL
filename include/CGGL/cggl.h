@@ -8,6 +8,7 @@
 #include "CGGL/text.h"
 #include "CGGL/gui.h"
 #include "CGGL/scene.h"
+#include "CGGL/time.h"
 
 // Include optional single-header files. (W.I.P, these are planned features)
 #ifdef CGGL_INCLUDE_REQUESTS
