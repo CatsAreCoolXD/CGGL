@@ -1,5 +1,6 @@
 // Include all the headers needed for CGGL.
 #include "CGGL/types.h"
+
 #include "CGGL/window.h"
 #include "CGGL/style.h"
 #include "CGGL/shape.h"
@@ -8,7 +9,9 @@
 #include "CGGL/text.h"
 #include "CGGL/gui.h"
 #include "CGGL/scene.h"
+
 #include "CGGL/time.h"
+#include "CGGL/audio.h"
 
 // Include optional single-header files. (W.I.P, these are planned features)
 #ifdef CGGL_INCLUDE_REQUESTS

@@ -8,6 +8,7 @@
 #include "CGGL/input.h"
 #include "CGGL/text.h"
 #include "CGGL/window.h"
+#include "CGGL/audio.h"
 
 namespace cg {
     namespace {
@@ -145,6 +146,7 @@ namespace cg {
     void Terminate(){
         glfwTerminate();
         cg::ShutdownFreetype();
+        cg::ShutdownAudio();
     }
 }
 

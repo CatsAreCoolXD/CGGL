@@ -29,6 +29,7 @@ add_library(${PROJECT_NAME} STATIC
     src/types.cpp
     src/window.cpp
     src/time.cpp
+    src/audio.cpp
         include/CGGL/raytracing/raytracing.h
 )
 

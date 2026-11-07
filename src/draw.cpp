@@ -5,6 +5,7 @@
 #include "CGGL/input.h"
 #include "CGGL/text.h"
 #include "CGGL/scene.h"
+#include "CGGL/audio.h"
 
 #include <iostream>
 
@@ -178,6 +179,9 @@ namespace cg {
 
         // Update input states
         cg::UpdateInputStates();
+
+        // Clean audio buffer
+        cg::CleanAudioBuffer();
 
         // Max frames per second
         bool vsync = cg::GetConfig(CGGL_CONFIG_VSYNC);
