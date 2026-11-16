@@ -53,6 +53,7 @@ namespace cg
     }
 
     bool GUIButton(std::string text, cg::Vec2f pos, cg::Vec2f size, unsigned int flags){
+        if (flags & FLAG_CENTERED) pos = pos - size / 2.f;
         cg::Vec2f mousePos = cg::GetMousePos();
         cg::Vec2f delta = mousePos - pos;
 
@@ -62,7 +63,7 @@ namespace cg
         float factor = HOVER_COLOR_SCALE_FACTOR * (pressingButton ? HOVER_COLOR_SCALE_FACTOR : 1.f);
         if (hovering) cg::PushPrimaryColor(cg::GetCurrentStyle().primaryColor * cg::Color(factor, factor, factor, 1.f));
         
-        cg::RoundedRectangle(pos, size, cg::GetRoundedSize(size), flags);
+        cg::RoundedRectangle(pos, size, cg::GetRoundedSize(size), flags & ~FLAG_CENTERED);
         cg::Text(text, pos + size / 2.f, FLAG_CENTERED | FLAG_USE_SECONDARY_COLOR);
 
         if (hovering) cg::PopStyle();

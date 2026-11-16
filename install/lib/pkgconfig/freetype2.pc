@@ -1,6 +1,6 @@
-prefix=/var/home/dkooistra/Documents/C++/CGGL/install
+prefix=/home/dkooistra/Documenten/C++/CGGL/install
 exec_prefix=${prefix}
-libdir=${prefix}/lib64
+libdir=${prefix}/lib
 includedir=${prefix}/include
 
 Name: FreeType 2
@@ -8,7 +8,7 @@ URL: https://freetype.org
 Description: A free, high-quality, and portable font engine.
 Version: 2.10.0
 Requires:
-Requires.private: zlib, libpng
+Requires.private: zlib, bzip2, libpng, harfbuzz
 Libs: -L${libdir} -lfreetype
 Libs.private: 
 Cflags: -I${includedir}/freetype2

@@ -243,7 +243,7 @@ FT_BEGIN_HEADER
    *   options set by those programs have precedence, overwriting the value
    *   here with the configured one.
    */
-/* #define FT_CONFIG_OPTION_USE_BZIP2 */
+#define FT_CONFIG_OPTION_USE_BZIP2
 
 
   /**************************************************************************
@@ -289,7 +289,7 @@ FT_BEGIN_HEADER
    *   options set by those programs have precedence, overwriting the value
    *   here with the configured one.
    */
-/* #define FT_CONFIG_OPTION_USE_HARFBUZZ */
+#define FT_CONFIG_OPTION_USE_HARFBUZZ
 
 
   /**************************************************************************

@@ -1,7 +1,7 @@
-prefix=/var/home/dkooistra/Documents/C++/CGGL/install
+prefix=/home/dkooistra/Documenten/C++/CGGL/install
 exec_prefix=${prefix}
-includedir=/var/home/dkooistra/Documents/C++/CGGL/install/include
-libdir=/var/home/dkooistra/Documents/C++/CGGL/install/lib64
+includedir=/home/dkooistra/Documenten/C++/CGGL/install/include
+libdir=/home/dkooistra/Documenten/C++/CGGL/install/lib
 
 Name: GLFW
 Description: A multi-platform library for OpenGL, window and input

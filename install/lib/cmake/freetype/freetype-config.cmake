@@ -7,7 +7,7 @@ if(CMAKE_VERSION VERSION_LESS "2.8.12")
    message(FATAL_ERROR "CMake >= 2.8.12 required")
 endif()
 cmake_policy(PUSH)
-cmake_policy(VERSION 2.8.12...4.1)
+cmake_policy(VERSION 2.8.12...4.3)
 #----------------------------------------------------------------
 # Generated CMake target import file.
 #----------------------------------------------------------------
@@ -60,7 +60,7 @@ add_library(freetype STATIC IMPORTED)
 
 set_target_properties(freetype PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include/freetype2"
-  INTERFACE_LINK_LIBRARIES "/usr/lib64/libz.so;/usr/lib64/libpng.so;/usr/lib64/libz.so"
+  INTERFACE_LINK_LIBRARIES "/usr/lib/libz.so;/usr/lib/libbz2.so;/usr/lib/libpng.so;/usr/lib/libz.so;/usr/lib/libharfbuzz.so"
 )
 
 # Load information for each installed configuration.
