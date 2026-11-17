@@ -33,6 +33,7 @@ namespace cg {
         bool resizable = false, antiAliasing = false;
         int antiAliasingLevel = 8;
         int windowMode = WINDOW_MODE_WINDOWED;
+        bool transparant = false;
     };
 
     cg::Vec2i GetWindowSize();

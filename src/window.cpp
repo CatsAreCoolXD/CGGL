@@ -36,16 +36,20 @@ namespace cg {
 
     void Initialize(std::string windowName, cg::Vec2i size, cg::WindowSettings settings){
         // Disable libdecor to hide window title bar and borders
-        if (settings.windowMode == WINDOW_MODE_WINDOWED_BORDERLESS || settings.windowMode == WINDOW_MODE_FULLSCREEN_BORDERLESS)
+        if (settings.windowMode == WINDOW_MODE_WINDOWED_BORDERLESS || settings.windowMode == WINDOW_MODE_FULLSCREEN_BORDERLESS){
             glfwInitHint(GLFW_WAYLAND_LIBDECOR, GLFW_WAYLAND_DISABLE_LIBDECOR);
+            glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+        } else {
+            glfwInitHint(GLFW_WAYLAND_LIBDECOR, GLFW_WAYLAND_LIBDECOR);
+            glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
+        }
 
         if (!glfwInit()){
             throw std::runtime_error("Couldn't initialize GLFW");
         }
 
         glfwWindowHint(GLFW_RESIZABLE, settings.resizable);
-        glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
-        glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+        glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, settings.transparant);
 
         if (settings.antiAliasing){
             glfwWindowHint(GLFW_SAMPLES, settings.antiAliasingLevel);
