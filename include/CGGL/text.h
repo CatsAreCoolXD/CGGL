@@ -38,7 +38,9 @@ namespace cg
     };
 
     void Text(std::string text, const cg::Vec2f& pos, unsigned int flag = 0u);
-    cg::Vec2f MeasureText(std::string text);
+
+    // Leave font as a nullptr to use font at top of stack.
+    cg::Vec2f MeasureText(std::string text, cg::Font* font = nullptr);
 
     void PushFont(cg::Font& font);
     cg::Font* PopFont();

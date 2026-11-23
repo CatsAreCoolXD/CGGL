@@ -100,12 +100,12 @@ namespace cg {
             textPos = pos - cg::MeasureText(batch) / 2.f + cg::Vec2f(0.f, amountOfNewLines * font->GetFontSize()) / 2.f;
         }
 
-        int i = 0;
         for (char& c : text){
             if (c == '\n') {
                 textPos.x = pos.x;
                 std::getline(ss, batch, '\n');
-                if (flag & FLAG_CENTERED) textPos = pos - cg::MeasureText(batch) / 2.f + cg::Vec2f(0.f, amountOfNewLines * font->GetFontSize()) / 2.f;
+                if (flag & FLAG_CENTERED)
+                    textPos.x = (pos - cg::MeasureText(batch) / 2.f + cg::Vec2f(0.f, amountOfNewLines * font->GetFontSize()) / 2.f).x;
                 textPos.y -= font->GetFontSize();
 
                 continue;
@@ -123,14 +123,23 @@ namespace cg {
         }
     }
 
-    cg::Vec2f MeasureText(std::string text){
-        cg::Font* font = fontStack.top();
+    cg::Vec2f MeasureText(std::string text, cg::Font* font){
+        if (!font)
+            font = fontStack.top();
 
         cg::Vec2f size;
+        float currentSizeX = 0;
         for (char& c : text){
+            if (c == '\n'){
+                size.y += font->GetFontSize();
+                currentSizeX = 0;
+                continue;
+            }
+            
             cg::FontCharacter* fontCharacter = font->characterMap[c];
-            size.x += fontCharacter->size.x + ((fontCharacter->advance >> 6) - fontCharacter->size.x);
+            currentSizeX += fontCharacter->size.x + ((fontCharacter->advance >> 6) - fontCharacter->size.x);
             size.y = std::max(size.y, (float)fontCharacter->size.y);
+            size.x = std::max(size.x, currentSizeX);
         }
         return size;
     }
