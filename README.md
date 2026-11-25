@@ -14,9 +14,13 @@ CGGL is an all-purpose C++ library, which currently has the following core featu
 - Text
 - Input
 - GUI
+- Audio (with miniaudio)
 
 It also has the following optional features:
 - (in the future realtime) Raytracing
+
+To be added features:
+- A simple helper header file for video decoding with FFmpeg
 
 #### What does CGGL stand for?
 
