@@ -20,12 +20,12 @@ namespace cg {
     class Texture {
     public:
         Texture() = default;
-        Texture(const char* path, int wrapping = REPEAT);
+        Texture(const char* path, int wrapping = WRAPPING_REPEAT, int minFilter = MIN_LINEAR, int magFilter = MAG_LINEAR);
 
         void Free();
         ~Texture();
 
-        void LoadImage(const char* path, int wrapping = REPEAT);
+        void LoadImage(const char* path, int wrapping = WRAPPING_REPEAT, int minFilter = MIN_LINEAR, int magFilter = MAG_LINEAR);
         void LoadGlyph(FT_Face& face);
 
         void SetOrigin(cg::Vec2f pos, bool centered = false);

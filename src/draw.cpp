@@ -546,8 +546,8 @@ namespace cg {
         return usage;
     }
 
-    Texture::Texture(const char* path, int wrapping) {
-        Texture::LoadImage(path, wrapping);
+    Texture::Texture(const char* path, int wrapping, int minFilter, int magFilter) {
+        Texture::LoadImage(path, wrapping, minFilter, magFilter);
     }
 
     void Texture::Free(){
@@ -564,7 +564,7 @@ namespace cg {
         shaderProgram.Use();
     }
 
-    void Texture::LoadImage(const char* path, int wrapping){
+    void Texture::LoadImage(const char* path, int wrapping, int minFilter, int magFilter){
         // Load the file and get it's data using stb_image.h
         unsigned char* data = stbi_load(path, &width, &height, &nrChannels, 0);
 
@@ -576,8 +576,8 @@ namespace cg {
             // Set the texture wrapping/filtering options
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapping);	
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapping);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
 
             // Generate the texture
             int colorType = nrChannels == 4 ? GL_RGBA : GL_RGB;
