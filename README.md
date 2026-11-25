@@ -32,4 +32,4 @@ The wiki knows it all.
 
 ## Disclaimer
 
-CGGL is not intended for commercial use. Actually, it's not even usable yet. It's still a massive W.I.P and I plane on adding and improving features for as long as possible. I want CGGL to become an all-purpose C++ library.
+CGGL is not intended for commercial use. While it is usable (I've used it in several projects), it's still a massive W.I.P and I plan on writing a whole new library from scratch in Vulkan, meaning CGGL will soon be archived.
