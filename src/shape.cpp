@@ -275,9 +275,9 @@ namespace cg {
         if (!cg::IsUsingTexture()){
             float triangle[21];
             for (int i = 0; i < 3; i++){
-                triangle[i * 7 + 0] = cg::clamp11(vertices[i].pos.x);
-                triangle[i * 7 + 1] = cg::clamp11(vertices[i].pos.y);
-                triangle[i * 7 + 2] = cg::clamp11(vertices[i].pos.z);
+                triangle[i * 7 + 0] = vertices[i].pos.x;
+                triangle[i * 7 + 1] = vertices[i].pos.y;
+                triangle[i * 7 + 2] = vertices[i].pos.z;
 
                 triangle[i * 7 + 3] = cg::clamp01(vertices[i].color.r);
                 triangle[i * 7 + 4] = cg::clamp01(vertices[i].color.g);
@@ -294,9 +294,9 @@ namespace cg {
             bool renderingGlyph = cg::IsUsingTexture() && cg::GetCurrentTexture()->IsGlyph();
             float triangle[27];
             for (int i = 0; i < 3; i++){
-                triangle[i * 9 + 0] = cg::clamp11(vertices[i].pos.x);
-                triangle[i * 9 + 1] = cg::clamp11(vertices[i].pos.y);
-                triangle[i * 9 + 2] = cg::clamp11(vertices[i].pos.z);
+                triangle[i * 9 + 0] = vertices[i].pos.x;
+                triangle[i * 9 + 1] = vertices[i].pos.y;
+                triangle[i * 9 + 2] = vertices[i].pos.z;
 
                 triangle[i * 9 + 3] = cg::clamp01(tint.r / 255.f);
                 triangle[i * 9 + 4] = cg::clamp01(tint.g / 255.f);
